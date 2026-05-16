@@ -19,7 +19,7 @@ A feature-rich Telegram music bot for voice chats, built with **Python**, **Pyro
 <p>
   <img alt="FFmpeg" src="https://img.shields.io/badge/FFmpeg-Required-007808?style=flat-square&logo=ffmpeg&logoColor=white" />
   <img alt="Platform" src="https://img.shields.io/badge/Platform-Linux-informational?style=flat-square" />
-  <img alt="License" src="https://img.shields.io/badge/Status-Private%20Repo-orange?style=flat-square" />
+  <img alt="License" src="https://img.shields.io/badge/Status-Public%20Repo-orange?style=flat-square" />
 </p>
 
 </div>
@@ -116,7 +116,6 @@ Startup sequence:
 ├── requirements.txt
 ├── Dockerfile
 ├── Procfile
-├── stackhost.yaml
 └── start
 ```
 
@@ -145,7 +144,7 @@ pip install -r requirements.txt
 ### 1) Clone project
 
 ```bash
-git clone <your-fork-or-repo-url>
+git clone https://github.com/TheJeager/Carlotta-Music
 cd Carlotta
 ```
 
@@ -256,16 +255,6 @@ Container includes dependencies and runs with `bash start`.
 
 ---
 
-## ☁️ StackHost Notes
-
-`stackhost.yaml` defines build/start metadata.
-
-- Build phase installs dependencies.
-- Start command uses `bash -l start`.
-- Auto deploy from branch is currently disabled.
-
----
-
 ## 🧩 Command Map
 
 ### Playback
@@ -307,9 +296,6 @@ Container includes dependencies and runs with `bash start`.
 ### Autoplay
 `/autoplay`
 
-### RTMP
-`/setrtmp` `/setrtmpkey` `/setkey` `/delrtmp` `/clearrtmp` `/rtmpplay` `/streamrtmp` `/ytplay` `/rtmpstop` `/stoprtmp` `/rtmpstatus`
-
 > Some commands are admin-only, owner-only, or group-only.
 
 ---
@@ -324,7 +310,6 @@ MongoDB usage includes:
 - Language and per-chat preferences
 - Queue and playlist metadata
 - Autoplay + stream mode toggles
-- RTMP destination details
 
 At startup, database connectivity is verified before full bot service is enabled.
 
@@ -377,7 +362,7 @@ Recommended future improvements:
 - Remove hardcoded sensitive defaults from `config.py`
 - Document assistant session generation flow in detail
 
-----
+---
 ## 🙏 Credits
 Special thanks to [AnonymousX1025](https://github.com/AnonymousX1025) for the original inspiration.
 
