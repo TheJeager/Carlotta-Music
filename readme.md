@@ -245,8 +245,8 @@ worker: bash start
 ## 🐳 Docker Deployment
 
 ```bash
-docker build -t carlotta-bot .
-docker run --rm --env-file .env carlotta-bot
+docker build -t Carlotta-Music .
+docker run --rm --env-file .env Carlotta-Music 
 ```
 
 Container includes dependencies and runs with `bash start`.
