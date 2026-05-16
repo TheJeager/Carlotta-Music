@@ -842,7 +842,6 @@ class YouTube:
                 "nocheckcertificate": True,
                 "cookiefile": cookie,
                 "socket_timeout": 10,
-                # Tune network behavior per stream mode to reduce startup delay.
                 **network_tuning,
             }
 
