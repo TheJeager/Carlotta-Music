@@ -12,3 +12,22 @@
     Local storage for cookies.<br>
     The file extension must be .txt and the cookie must be in <b>Netscape format.</b>
 </p>
+
+---
+
+**Export your cookies:**
+
+| Browser    | Extension        | Download Link                                                                |
+|------------|------------------|-----------------------------------------------------------------------------|
+| Chrome     | Get cookies.txt  | [Chrome Web Store](https://chromewebstore.google.com/detail/get-cookiestxt-clean/ahmnmhfbokciafffnknlekllgcnafnie) |
+| Firefox    | cookies.txt      | [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/) |
+
+**Steps:**
+1. Install the extension in your browser.
+2. Log in to the streaming site (use a **secondary account**).
+3. Export `cookies.txt` using the extension.
+4. Upload/reference `cookies.txt` file in your bot's settings.
+
+> ⚠️ **Safety tip:**  
+> - Do not log in again after exporting cookies—they may become invalid.
+> - Use secondary accounts to safeguard your credentials.
