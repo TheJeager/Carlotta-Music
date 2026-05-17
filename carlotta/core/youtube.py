@@ -71,14 +71,14 @@ class YouTube:
             return value
 
         parsed = urlparse(value)
-        host = parsed.netloc.lower()
+        host = (parsed.hostname or "").lower()
         path = parsed.path.strip("/")
 
-        if host.endswith("youtu.be") and path:
+        if (host == "youtu.be" or host.endswith(".youtu.be")) and path:
             candidate = path.split("/")[0]
             return candidate if re.fullmatch(r"[A-Za-z0-9_-]{11}", candidate) else None
 
-        if "youtube.com" in host:
+        if host == "youtube.com" or host.endswith(".youtube.com"):
             if path == "watch":
                 candidate = parse_qs(parsed.query).get("v", [None])[0]
                 return candidate if candidate and re.fullmatch(r"[A-Za-z0-9_-]{11}", candidate) else None
