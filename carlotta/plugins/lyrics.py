@@ -1,4 +1,6 @@
 import aiohttp
+import re
+from html import unescape
 from urllib.parse import quote
 from pyrogram import filters, types
 
@@ -29,42 +31,42 @@ async def _fetch_from_genius(session: aiohttp.ClientSession, query: str):
     if not song_hits:
         return None
 
-    best = song_hits[0].get("result", {})
-    title = best.get("full_title") or best.get("title") or "Unknown"
-    artist = best.get("primary_artist", {}).get("name", "Unknown")
-    url = best.get("url")
+    for hit in song_hits:
+        best = hit.get("result", {})
+        title = best.get("full_title") or best.get("title") or "Unknown"
+        artist = best.get("primary_artist", {}).get("name", "Unknown")
+        url = best.get("url")
 
-    if not url:
-        return None
+        if not url:
+            continue
 
-    async with session.get("" + quote(url, safe="https://genius.com/api"), headers=HEADERS) as lyr_resp:
-        if lyr_resp.status != 200:
-            return None
-        lyr_data = await lyr_resp.json(content_type=None)
+        async with session.get(url, headers=HEADERS) as lyr_resp:
+            if lyr_resp.status != 200:
+                continue
+            html = await lyr_resp.text()
 
-    lyrics = lyr_data.get("lyrics")
-    if not lyrics:
-        return None
-    return title, artist, lyrics
+        blocks = re.findall(
+            r'<div[^>]*data-lyrics-container="true"[^>]*>(.*?)</div>',
+            html,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+        if not blocks:
+            continue
 
+        lyrics_parts = []
+        for block in blocks:
+            block = re.sub(r"<br\s*/?>", "\n", block, flags=re.IGNORECASE)
+            block = re.sub(r"<[^>]+>", "", block)
+            cleaned = unescape(block).strip()
+            if cleaned:
+                lyrics_parts.append(cleaned)
 
-async def _fetch_from_lrclib(session: aiohttp.ClientSession, query: str):
-    async with session.get(f"https://genius.com/api/search?q={quote(query)}") as resp:
-        if resp.status != 200:
-            return None
-        data = await resp.json(content_type=None)
-    if not data:
-        return None
-
-    for entry in data:
-        lyrics = entry.get("plainLyrics")
+        lyrics = "\n".join(lyrics_parts).strip()
         if lyrics:
-            return (
-                entry.get("trackName", "Unknown"),
-                entry.get("artistName", "Unknown"),
-                lyrics,
-            )
+            return title, artist, lyrics
+
     return None
+
 
 
 @app.on_message(filters.command(["lyrics"]) & ~app.bl_users)
@@ -87,9 +89,6 @@ async def _lyrics(_, m: types.Message):
     try:
         async with aiohttp.ClientSession() as session:
             result = await _fetch_from_genius(session, query)
-            if not result:
-                result = await _fetch_from_lrclib(session, query)
-
             if not result:
                 return await sent.edit_text(m.lang["lyrics_not_found"].format(query))
 
