@@ -42,7 +42,7 @@ class Config:
 
         self.LANG_CODE = getenv("LANG_CODE", "en")
 
-        self.COOKIES_URL = self._parse_cookies_url(getenv("COOKIES_URL", "https://batbin.me/qfn2"))
+        self.COOKIES_URL = self._parse_cookies_url(getenv("COOKIES_URL", ""))
         self.DEFAULT_THUMB = getenv("DEFAULT_THUMB", "https://i.ibb.co/fVymn3T2/photo-2026-04-17-20-43-52.jpg")
         self.PING_IMG = getenv("PING_IMG", "https://i.ibb.co/bMX0hDSk/photo-2026-04-17-20-43-55.jpg")
         self.START_IMG = getenv("START_IMG", "https://i.ibb.co/SXwDGxNJ/image.jpg")
@@ -59,12 +59,16 @@ class Config:
             return default
         try:
             return int(value)
-        except ValueError as exc:
+        except (TypeError, ValueError) as exc:
             raise ValueError(f"Expected integer value, got: {value}") from exc
 
     @staticmethod
     def _parse_cookies_url(value):
-        return [url for url in str(value).split() if "batbin.me" in url]
+        urls = []
+        for url in str(value).split():
+            if url.startswith("https://batbin.me/") or url.startswith("http://batbin.me/"):
+                urls.append(url)
+        return urls
 
     def check(self):
         missing = [var for var in self.REQUIRED_FIELDS if not getattr(self, var)]
