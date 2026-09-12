@@ -80,6 +80,7 @@ class Inline:
                 "play",
                 "queue",
                 "search",
+                "shuffle",
                 "stats",
                 "sudo",
                 "volume",
