@@ -1,5 +1,3 @@
-
-
 import time
 import asyncio
 import logging
@@ -22,7 +20,7 @@ logging.getLogger("pytgcalls").setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
-__version__ = "3.0.2"
+__version__ = "3.0.3"
 
 from config import Config
 
@@ -74,6 +72,5 @@ async def stop() -> None:
     await db.close()
     await thumb.close()
     await yt.close()
-    if yt.api and yt.api.session: await yt.api.session.close()
 
     logger.info("Stopped.\n")
