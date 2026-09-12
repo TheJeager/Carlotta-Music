@@ -1,4 +1,5 @@
 import asyncio
+import secrets
 from html import escape
 from pathlib import Path
 from typing import Any
@@ -6,7 +7,7 @@ from typing import Any
 from pyrogram import enums, filters, types
 from pyrogram import errors as py_errors
 from pyrogram.errors import MessageNotModified
-from pyrogram.types import InputMediaPhoto
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 
 from carlotta import anon, app, config, db, lang, logger, queue, yt
 from carlotta.helpers import Track, buttons
@@ -22,32 +23,51 @@ def _title(item, fallback="Unknown Title"):
     return _value(item, "title") or fallback
 
 
-def _code_collection():
+def _codes():
     return db.db.playlist_codes
 
 
 async def _get_or_create_code(user_id: int) -> str:
-    doc = await _code_collection().find_one({"_user_id": user_id})
+    doc = await _codes().find_one({"_user_id": user_id}, {"code": 1})
     if doc and doc.get("code"):
         return doc["code"]
     alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-    import secrets
-    for _ in range(20):
+    for _ in range(32):
         code = "".join(secrets.choice(alphabet) for _ in range(4))
         try:
-            await _code_collection().insert_one({"_id": code, "_user_id": user_id, "code": code})
+            await _codes().insert_one({"_id": code, "_user_id": user_id, "code": code})
             return code
         except Exception:
             continue
-    raise RuntimeError("Unable to allocate playlist code")
+    raise RuntimeError("Could not create playlist code")
 
 
-async def _find_user_by_code(code: str):
-    code = code.strip().upper()
+async def _owner_from_code(code: str) -> int | None:
+    code = (code or "").strip().upper()
     if len(code) != 4:
         return None
-    doc = await _code_collection().find_one({"_id": code}, {"_user_id": 1})
+    doc = await _codes().find_one({"_id": code}, {"_user_id": 1})
     return int(doc["_user_id"]) if doc and doc.get("_user_id") else None
+
+
+def _playlist_markup(user_id: int, index: int, total: int, code: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("⟨", callback_data=f"playlist nav {user_id} saved {index - 1}"),
+            InlineKeyboardButton(f"{index + 1}/{total}", callback_data=f"playlist noop {user_id}"),
+            InlineKeyboardButton("⟩", callback_data=f"playlist nav {user_id} saved {index + 1}"),
+        ],
+        [
+            InlineKeyboardButton("▶ Play", callback_data=f"playlist play {user_id} saved {index}"),
+            InlineKeyboardButton("▶ Play All", callback_data=f"playlist playall {user_id} {code}"),
+        ],
+        [
+            InlineKeyboardButton("🗑 Remove", callback_data=f"playlist delete {user_id} saved {index}"),
+            InlineKeyboardButton("🔄 Refresh", callback_data=f"playlist nav {user_id} saved {index}"),
+        ],
+        [InlineKeyboardButton(f"CODE: {code}", callback_data=f"playlist noop {user_id}")],
+        [InlineKeyboardButton("✕ Close", callback_data=f"playlist close {user_id}")],
+    ])
 
 
 async def _ensure_chat(query: types.CallbackQuery, chat_id: int) -> str | None:
@@ -111,11 +131,10 @@ async def _save(user_id: int, item, language: dict):
     item_id = _value(item, "id")
     if not item_id:
         return False, language["playlist_add_failed"], None
+    code = await _get_or_create_code(user_id)
     if await db.in_playlist(user_id, item_id):
-        code = await _get_or_create_code(user_id)
         return False, language["playlist_exists"].format(_title(item)), code
     _, total = await db.add_playlist_item(user_id, item)
-    code = await _get_or_create_code(user_id)
     return True, language["playlist_added"].format(_title(item), total), code
 
 
@@ -154,18 +173,12 @@ def _card(lang_dict, user, code, item, index, total):
     title = escape(_title(item, lang_dict["playlist_unknown_song"]))
     artist = escape(_value(item, "channel_name") or user.first_name or "Unknown")
     duration = escape(_value(item, "duration") or "00:00")
-    return (
-        f"<b>🎵 My Playlist</b>\n\n"
-        f"<b>Code:</b> <code>{code}</code>\n"
-        f"<b>Track:</b> {index + 1}/{total}\n\n"
-        f"<b>{title}</b>\n"
-        f"<i>{artist} • {duration}</i>"
-    )
+    return f"<b>🎵 My Playlist</b>\n\n<b>Code:</b> <code>{code}</code>\n<b>Track:</b> {index + 1}/{total}\n\n<b>{title}</b>\n<i>{artist} • {duration}</i>"
 
 
 async def _render(target, user, lang_dict, index=0, code=None):
     if code:
-        owner = await _find_user_by_code(code)
+        owner = await _owner_from_code(code)
         if owner != user.id:
             text = "❌ Invalid or unavailable playlist code."
             if isinstance(target, types.CallbackQuery):
@@ -173,7 +186,6 @@ async def _render(target, user, lang_dict, index=0, code=None):
             return await target.reply_text(text, quote=True)
     else:
         code = await _get_or_create_code(user.id)
-
     items = await db.get_playlist(user.id, "saved")
     if not items:
         markup = buttons.playlist_empty_markup(user.id, "saved")
@@ -186,10 +198,9 @@ async def _render(target, user, lang_dict, index=0, code=None):
         else:
             await target.reply_text(text, reply_markup=markup, quote=True)
         return
-
     index %= len(items)
     item = items[index]
-    markup = buttons.playlist_markup(user.id, "saved", index, len(items), True, code=code)
+    markup = _playlist_markup(user.id, index, len(items), code)
     text = _card(lang_dict, user, code, item, index, len(items))
     thumb = item.get("thumbnail")
     if isinstance(target, types.CallbackQuery):
@@ -220,19 +231,7 @@ async def _play_item(query, item):
     if error:
         return error
     mode = await db.get_stream_mode(chat_id)
-    track = Track(
-        id=item["id"],
-        channel_name=item.get("channel_name"),
-        duration=item.get("duration") or "00:00",
-        duration_sec=item.get("duration_sec", 0),
-        file_path=_file(item),
-        stream_mode=item.get("stream_mode") or mode,
-        title=item.get("title") or "Unknown Title",
-        url=_link(item),
-        thumbnail=item.get("thumbnail"),
-        user=query.from_user.mention,
-        video=item.get("video", False),
-    )
+    track = Track(id=item["id"], channel_name=item.get("channel_name"), duration=item.get("duration") or "00:00", duration_sec=item.get("duration_sec", 0), file_path=_file(item), stream_mode=item.get("stream_mode") or mode, title=item.get("title") or "Unknown Title", url=_link(item), thumbnail=item.get("thumbnail"), user=query.from_user.mention, video=item.get("video", False))
     if not track.file_path and yt.is_stream_url(track.url):
         track.file_path = track.url
     if track.duration_sec > config.DURATION_LIMIT:
@@ -255,8 +254,8 @@ async def _play_item(query, item):
 
 
 async def _play_all(query, user_id: int, code: str):
-    if query.from_user.id != user_id:
-        return await query.answer("This playlist belongs to another user.", show_alert=True)
+    if query.from_user.id != user_id or await _owner_from_code(code) != user_id:
+        return await query.answer("This playlist code is not yours.", show_alert=True)
     items = await db.get_playlist(user_id, "saved")
     if not items:
         return await query.answer("Playlist is empty.", show_alert=True)
@@ -268,13 +267,9 @@ async def _play_all(query, user_id: int, code: str):
     if available <= 0:
         return await query.answer(query.lang["play_queue_full"].format(config.QUEUE_LIMIT), show_alert=True)
     selected = items[:available]
+    mode = await db.get_stream_mode(chat_id)
     for item in selected:
-        track = Track(
-            id=item["id"], channel_name=item.get("channel_name"), duration=item.get("duration") or "00:00",
-            duration_sec=item.get("duration_sec", 0), file_path=_file(item), stream_mode=item.get("stream_mode") or await db.get_stream_mode(chat_id),
-            title=item.get("title") or "Unknown Title", url=_link(item), thumbnail=item.get("thumbnail"), user=query.from_user.mention, video=item.get("video", False)
-        )
-        queue.add(chat_id, track)
+        queue.add(chat_id, Track(id=item["id"], channel_name=item.get("channel_name"), duration=item.get("duration") or "00:00", duration_sec=item.get("duration_sec", 0), file_path=_file(item), stream_mode=item.get("stream_mode") or mode, title=item.get("title") or "Unknown Title", url=_link(item), thumbnail=item.get("thumbnail"), user=query.from_user.mention, video=item.get("video", False)))
     if await db.get_call(chat_id):
         return await query.answer(f"Added {len(selected)} tracks to the queue.", show_alert=True)
     current = queue.get_current(chat_id)
@@ -286,7 +281,7 @@ async def _play_all(query, user_id: int, code: str):
     msg = await query.message.reply_text(query.lang["play_next"], quote=False)
     current.message_id = msg.id
     await anon.play_media(chat_id, msg, current)
-    await query.answer(f"Started playlist • {len(selected)} tracks", show_alert=False)
+    await query.answer(f"Started playlist • {len(selected)} tracks")
 
 
 @app.on_message(filters.command(["playlist"]) & ~app.bl_users)
@@ -315,8 +310,7 @@ async def del_playlist_cmd(_, m: types.Message):
     if not item:
         return await m.reply_text(m.lang["playlist_no_active"], quote=True)
     removed = await db.del_playlist_item(m.from_user.id, item.id)
-    text = m.lang["playlist_removed"].format(item.title) if removed else m.lang["playlist_missing"].format(item.title)
-    await m.reply_text(text, quote=True)
+    await m.reply_text(m.lang["playlist_removed"].format(item.title) if removed else m.lang["playlist_missing"].format(item.title), quote=True)
 
 
 @app.on_callback_query(filters.regex(r"^playlist\s") & ~app.bl_users)
@@ -341,6 +335,8 @@ async def playlist_callbacks(_, query: types.CallbackQuery):
     if action == "close":
         await query.answer()
         return await query.message.delete()
+    if action == "noop":
+        return await query.answer()
     if action == "playall":
         return await _play_all(query, owner_id, data[3] if len(data) > 3 else "")
     section = data[3] if len(data) > 3 and data[3] in {"saved", "history"} else "saved"
