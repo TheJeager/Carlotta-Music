@@ -51,7 +51,7 @@ class Inline:
             keyboard.append(
                 [
                     self.button(
-                        text="💾 Save Playlist",
+                        text="➕ Add to Playlist",
                         callback_data=f"playlist savecurrent {chat_id}",
                         style="success",
                     )
@@ -79,7 +79,6 @@ class Inline:
                 "ping",
                 "play",
                 "queue",
-                "shuffle",
                 "search",
                 "stats",
                 "sudo",
@@ -97,7 +96,6 @@ class Inline:
 
     def lang_markup(self, _lang: str) -> types.InlineKeyboardMarkup:
         langs = lang.get_languages()
-
         buttons = [
             self.button(
                 text=f"{name} ({code}) {'✔️' if code == _lang else ''}",
@@ -182,64 +180,68 @@ class Inline:
                 ],
                 [
                     self.button(
-                        text=lang["autoplay_title"] + " ➜",
-                        callback_data="settings",
+                        text=lang["cmd_delete"] + " ➜",
+                        callback_data="settings cmd_delete",
+                        style="primary",
+                    ),
+                    self.button(
+                        text=_on if cmd_delete else _off,
+                        callback_data="settings cmd_delete_toggle",
+                        style="success" if cmd_delete else "danger",
+                    ),
+                ],
+                [
+                    self.button(
+                        text=lang["autoplay"] + " ➜",
+                        callback_data="settings autoplay",
                         style="primary",
                     ),
                     self.button(
                         text=_on if autoplay else _off,
-                        callback_data="settings autoplay",
+                        callback_data="settings autoplay_toggle",
                         style="success" if autoplay else "danger",
                     ),
                 ],
                 [
                     self.button(
                         text=lang["clean_mode"] + " ➜",
-                        callback_data="settings",
+                        callback_data="settings clean",
                         style="primary",
                     ),
                     self.button(
                         text=_on if clean_mode else _off,
-                        callback_data="settings clean",
+                        callback_data="settings clean_toggle",
                         style="success" if clean_mode else "danger",
                     ),
                 ],
                 [
                     self.button(
-                        text=lang["cmd_delete"] + " ➜",
-                        callback_data="settings",
+                        text=lang["language"],
+                        callback_data="settings language",
                         style="primary",
                     ),
                     self.button(
-                        text=_on if cmd_delete else _off,
-                        callback_data="settings delete",
-                        style="success" if cmd_delete else "danger",
+                        text=language.upper(),
+                        callback_data="settings language",
+                        style="default",
                     ),
                 ],
                 [
                     self.button(
-                        text=lang["stream_mode"] + " ➜",
-                        callback_data="settings",
+                        text=lang["stream_mode"],
+                        callback_data="settings stream_mode",
                         style="primary",
                     ),
                     self.button(
-                        text=lang[f"stream_mode_{stream_mode}"],
-                        callback_data="settings quality",
-                        style="success",
+                        text=stream_mode.title(),
+                        callback_data="settings stream_mode",
+                        style="default",
                     ),
-                ],
-                [
-                    self.button(
-                        text=lang["language"] + " ➜",
-                        callback_data="settings",
-                        style="primary",
-                    ),
-                    self.button(text=lang_codes[language], callback_data="language", style="success"),
                 ],
                 [
                     self.button(
                         text=lang["close"],
-                        callback_data=f"autoplay close {chat_id}",
+                        callback_data="settings close",
                         style="danger",
                     )
                 ],
@@ -249,24 +251,20 @@ class Inline:
     def autoplay_markup(
         self, _lang: dict, chat_id: int, enabled: bool
     ) -> types.InlineKeyboardMarkup:
-        enable_text = (
-            f"✓ {_lang['autoplay_enable']}" if enabled else _lang["autoplay_enable"]
-        )
-        disable_text = (
-            f"✓ {_lang['autoplay_disable']}" if not enabled else _lang["autoplay_disable"]
-        )
+        enable_text = _lang["autoplay_switch_on"]
+        disable_text = _lang["autoplay_switch_off"]
         return self.ikm(
             [
                 [
                     self.button(
                         text=enable_text,
                         callback_data=f"autoplay enable {chat_id}",
-                        style="primary"
+                        style="success" if not enabled else "primary",
                     ),
                     self.button(
                         text=disable_text,
                         callback_data=f"autoplay disable {chat_id}",
-                        style="primary"
+                        style="danger" if enabled else "primary",
                     ),
                 ],
                 [
@@ -279,231 +277,5 @@ class Inline:
             ]
         )
 
-    def search_again_markup(self) -> types.InlineKeyboardMarkup:
-        return self.ikm(
-            [[self.button(text="🔍 Search Again", switch_inline_query_current_chat="")]]
-        )
 
-    def search_markup(
-        self, results: list, _lang: dict, user_id: int
-    ) -> types.InlineKeyboardMarkup:
-        rows = []
-        for index, item in enumerate(results, start=1):
-            rows.append(
-                [
-                    self.button(
-                        text=f"{index}. {item['title'][:40]}",
-                        callback_data=f"search {user_id} play {item['id']}",
-                        style="primary",
-                    )
-                ]
-            )
-        rows.append(
-            [
-                self.button(
-                    text=_lang["close"],
-                    callback_data=f"search {user_id} close",
-                    style="danger",
-                )
-            ]
-        )
-        return self.ikm(rows)
-
-    def lyrics_markup(
-        self, _lang: dict, user_id: int
-    ) -> types.InlineKeyboardMarkup:
-        return self.ikm(
-            [
-                [
-                    self.button(
-                        text=_lang["close"],
-                        callback_data=f"lyrics {user_id} close",
-                        style="danger",
-                    )
-                ]
-            ]
-        )
-
-    def quality_markup(
-        self, _lang: dict, chat_id: int, selected: str
-    ) -> types.InlineKeyboardMarkup:
-        modes = ["performance", "balanced", "best"]
-        rows = []
-        for mode in modes:
-            label = _lang[f"stream_mode_{mode}"]
-            if selected == mode:
-                label = f"✓ {label}"
-            rows.append(
-                [
-                    self.button(
-                        text=label,
-                        callback_data=f"quality set {chat_id} {mode}",
-                        style="success" if selected == mode else "primary",
-                    )
-                ]
-            )
-
-        rows.append(
-            [
-                self.button(
-                    text=_lang["close"],
-                    callback_data=f"quality close {chat_id}",
-                    style="danger",
-                )
-            ]
-        )
-
-        return self.ikm(rows)
-
-    def clean_markup(
-        self, _lang: dict, chat_id: int, enabled: bool
-    ) -> types.InlineKeyboardMarkup:
-        enable_text = (
-            f"✓ {_lang['autoplay_enable']}" if enabled else _lang["autoplay_enable"]
-        )
-        disable_text = (
-            f"✓ {_lang['autoplay_disable']}" if not enabled else _lang["autoplay_disable"]
-        )
-        return self.ikm(
-            [
-                [
-                    self.button(
-                        text=enable_text,
-                        callback_data=f"clean enable {chat_id}",
-                        style="primary",
-                    ),
-                    self.button(
-                        text=disable_text,
-                        callback_data=f"clean disable {chat_id}",
-                        style="primary",
-                    ),
-                ],
-                [
-                    self.button(
-                        text=_lang["close"],
-                        callback_data=f"clean close {chat_id}",
-                        style="danger",
-                    )
-                ],
-            ]
-        )
-
-    def start_key(
-        self, lang: dict, private: bool = False
-    ) -> types.InlineKeyboardMarkup:
-        rows = [
-            [
-                self.button(
-                    text=lang["add_me"],
-                    url=f"https://t.me/{app.username}?startgroup=true",
-                    style="success",
-                )
-            ],
-            [self.button(text=lang["help"], callback_data="help", style="primary")],
-            [
-                self.button(text=lang["support"], url=config.SUPPORT_CHAT, style="primary"),
-                self.button(text=lang["channel"], url=config.SUPPORT_CHANNEL, style="primary"),
-            ],
-        ]
-        if private:
-            pass  # source button removed
-        else:
-            rows += [[self.button(text=lang["language"], callback_data="language", style="success")]]
-        return self.ikm(rows)
-
-    def playlist_markup(
-        self,
-        user_id: int,
-        section: str,
-        index: int,
-        total: int,
-        saved: bool,
-    ) -> types.InlineKeyboardMarkup:
-        rows = [
-            [
-                self.button(
-                    text="⟨",
-                    callback_data=f"playlist nav {user_id} {section} {index - 1}",
-                    style="primary",
-                ),
-                self.button(
-                    text=f"{index + 1}/{total}",
-                    callback_data=f"playlist noop {user_id}",
-                    style="default",
-                ),
-                self.button(
-                    text="⟩",
-                    callback_data=f"playlist nav {user_id} {section} {index + 1}",
-                    style="primary",
-                ),
-            ],
-            [
-                self.button(
-                    text="Saved",
-                    callback_data=f"playlist switch {user_id} saved 0",
-                    style="primary" if section == "saved" else "default",
-                ),
-                self.button(
-                    text="Recent",
-                    callback_data=f"playlist switch {user_id} history 0",
-                    style="primary",
-                ),
-            ],
-        ]
-
-        action = "delete" if saved else "save"
-        action_text = "🗑 Remove" if saved else "💾 Save"
-        rows.append(
-            [
-                self.button(
-                    text="♫ Play",
-                    callback_data=f"playlist play {user_id} {section} {index}",
-                    style="primary",
-                ),
-                self.button(
-                    text=action_text,
-                    callback_data=f"playlist {action} {user_id} {section} {index}",
-                    style="primary",
-                ),
-            ]
-        )
-
-        rows.append(
-            [
-                self.button(
-                    text="Close",
-                    callback_data=f"playlist close {user_id}",
-                    style="primary",
-                )
-            ]
-        )
-        return self.ikm(rows)
-
-    def playlist_empty_markup(
-        self,
-        user_id: int,
-        section: str,
-    ) -> types.InlineKeyboardMarkup:
-        return self.ikm(
-            [
-                [
-                    self.button(
-                        text="Saved",
-                        callback_data=f"playlist switch {user_id} saved 0",
-                        style="primary" if section == "saved" else "default",
-                    ),
-                    self.button(
-                        text="Recent",
-                        callback_data=f"playlist switch {user_id} history 0",
-                        style="primary",
-                    ),
-                ],
-                [
-                    self.button(
-                        text="Close",
-                        callback_data=f"playlist close {user_id}",
-                        style="danger",
-                    )
-                ],
-            ]
-        )
+buttons = Inline()
