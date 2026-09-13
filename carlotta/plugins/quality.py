@@ -16,7 +16,9 @@ STREAM_MODE_ALIASES = {
 }
 
 
-@app.on_message(filters.command(["quality", "streammode"]) & filters.group & ~app.bl_users)
+@app.on_message(
+    filters.command(["quality", "streammode"]) & filters.group & ~app.bl_users
+)
 @lang.language()
 @admin_check
 async def stream_quality(_, m: types.Message):

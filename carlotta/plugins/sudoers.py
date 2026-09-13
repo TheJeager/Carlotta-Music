@@ -1,12 +1,12 @@
-
-
 from pyrogram import filters, types
 
 from carlotta import app, db, lang
 from carlotta.helpers import utils
 
 
-@app.on_message(filters.command(["addsudo", "delsudo", "rmsudo"]) & filters.user(app.owner))
+@app.on_message(
+    filters.command(["addsudo", "delsudo", "rmsudo"]) & filters.user(app.owner)
+)
 @lang.language()
 async def _sudo(_, m: types.Message):
     user = await utils.extract_user(m)
@@ -30,6 +30,7 @@ async def _sudo(_, m: types.Message):
 
 
 o_mention = None
+
 
 @app.on_message(filters.command(["listsudo", "sudolist"]))
 @lang.language()

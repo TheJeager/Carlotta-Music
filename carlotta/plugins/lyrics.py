@@ -68,7 +68,6 @@ async def _fetch_from_genius(session: aiohttp.ClientSession, query: str):
     return None
 
 
-
 @app.on_message(filters.command(["lyrics"]) & ~app.bl_users)
 @lang.language()
 async def _lyrics(_, m: types.Message):

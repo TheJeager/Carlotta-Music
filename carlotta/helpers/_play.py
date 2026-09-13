@@ -1,5 +1,3 @@
-
-
 import asyncio
 
 from pyrogram import enums, errors, types
@@ -32,7 +30,9 @@ def checkUB(play):
             )
 
         if len(queue.get_queue(chat_id)) >= config.QUEUE_LIMIT:
-            return await m.reply_text(m.lang["play_queue_full"].format(config.QUEUE_LIMIT))
+            return await m.reply_text(
+                m.lang["play_queue_full"].format(config.QUEUE_LIMIT)
+            )
 
         force = call_kwargs.pop("force", None)
         if force is None:
@@ -46,7 +46,9 @@ def checkUB(play):
 
         url = call_kwargs.pop("url", None) or utils.get_url(m)
         if url and yt.invalid(url):
-            return await m.reply_text(m.lang["play_not_found"].format(config.SUPPORT_CHAT))
+            return await m.reply_text(
+                m.lang["play_not_found"].format(config.SUPPORT_CHAT)
+            )
         m3u8 = call_kwargs.pop("m3u8", None)
         if m3u8 is None:
             m3u8 = bool(url and yt.is_stream_url(url))
@@ -70,9 +72,7 @@ def checkUB(play):
                     enums.ChatMemberStatus.RESTRICTED,
                 ]:
                     try:
-                        await app.unban_chat_member(
-                            chat_id=chat_id, user_id=client.id
-                        )
+                        await app.unban_chat_member(chat_id=chat_id, user_id=client.id)
                     except Exception:
                         return await m.reply_text(
                             m.lang["play_banned"].format(
@@ -84,7 +84,10 @@ def checkUB(play):
                         )
             except errors.ChatAdminRequired:
                 return await m.reply_text(m.lang["admin_required"])
-            except (errors.UserNotParticipant, errors.exceptions.bad_request_400.UserNotParticipant):
+            except (
+                errors.UserNotParticipant,
+                errors.exceptions.bad_request_400.UserNotParticipant,
+            ):
                 if m.chat.username:
                     invite_link = m.chat.username
                     try:
@@ -135,6 +138,8 @@ def checkUB(play):
             except Exception:
                 pass
 
-        return await play(_, m, *args, force=force, m3u8=m3u8, video=video, url=url, **call_kwargs)
+        return await play(
+            _, m, *args, force=force, m3u8=m3u8, video=video, url=url, **call_kwargs
+        )
 
     return wrapper

@@ -61,7 +61,11 @@ class YouTube:
     def format_duration(seconds: int) -> str:
         minutes, secs = divmod(max(seconds, 0), 60)
         hours, minutes = divmod(minutes, 60)
-        return f"{hours}:{minutes:02d}:{secs:02d}" if hours else f"{minutes:02d}:{secs:02d}"
+        return (
+            f"{hours}:{minutes:02d}:{secs:02d}"
+            if hours
+            else f"{minutes:02d}:{secs:02d}"
+        )
 
     def extract_video_id(self, value: str | None) -> str | None:
         if not value:
@@ -81,10 +85,16 @@ class YouTube:
         if host == "youtube.com" or host.endswith(".youtube.com"):
             if path == "watch":
                 candidate = parse_qs(parsed.query).get("v", [None])[0]
-                return candidate if candidate and re.fullmatch(r"[A-Za-z0-9_-]{11}", candidate) else None
+                return (
+                    candidate
+                    if candidate and re.fullmatch(r"[A-Za-z0-9_-]{11}", candidate)
+                    else None
+                )
             if path.startswith("shorts/") or path.startswith("embed/"):
                 candidate = path.split("/")[1]
-                return candidate if re.fullmatch(r"[A-Za-z0-9_-]{11}", candidate) else None
+                return (
+                    candidate if re.fullmatch(r"[A-Za-z0-9_-]{11}", candidate) else None
+                )
 
         return None
 
@@ -121,7 +131,10 @@ class YouTube:
 
     def is_music_url(self, url: str) -> bool:
         host = urlparse(url).netloc.lower()
-        return any(host == domain or host.endswith(f".{domain}") for domain in self.music_domains)
+        return any(
+            host == domain or host.endswith(f".{domain}")
+            for domain in self.music_domains
+        )
 
     @staticmethod
     async def _resolve_spotify_metadata(url: str) -> tuple[str, str, str]:
@@ -129,7 +142,9 @@ class YouTube:
         endpoint = "https://open.spotify.com/oembed"
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(endpoint, params={"url": url}, timeout=8) as resp:
+                async with session.get(
+                    endpoint, params={"url": url}, timeout=8
+                ) as resp:
                     if resp.status != 200:
                         return "", "", ""
                     payload = await resp.json()
@@ -159,7 +174,9 @@ class YouTube:
         mode: str = "balanced",
         fallback_url: str | None = None,
     ) -> Track | None:
-        track_id = data.get("id") or self.extract_video_id(data.get("url") or fallback_url)
+        track_id = data.get("id") or self.extract_video_id(
+            data.get("url") or fallback_url
+        )
         if not track_id:
             return None
 
@@ -178,7 +195,12 @@ class YouTube:
         if not isinstance(channel, dict):
             channel = {}
 
-        url = data.get("link") or data.get("webpage_url") or fallback_url or f"{self.base}{track_id}"
+        url = (
+            data.get("link")
+            or data.get("webpage_url")
+            or fallback_url
+            or f"{self.base}{track_id}"
+        )
         if isinstance(url, str) and "&list=" in url:
             url = url.split("&list=", 1)[0]
 
@@ -196,14 +218,19 @@ class YouTube:
         return Track(
             id=track_id,
             album=data.get("album"),
-            channel_name=channel.get("name") or data.get("channel_name") or data.get("uploader") or data.get("artist"),
+            channel_name=channel.get("name")
+            or data.get("channel_name")
+            or data.get("uploader")
+            or data.get("artist"),
             duration=duration or "00:00",
             duration_sec=duration_sec or 0,
             message_id=m_id,
             title=self.trim_title(data.get("title")),
             thumbnail=thumbnail,
             url=url,
-            view_count=(data.get("viewCount") or {}).get("short") if isinstance(data.get("viewCount"), dict) else data.get("view_count"),
+            view_count=(data.get("viewCount") or {}).get("short")
+            if isinstance(data.get("viewCount"), dict)
+            else data.get("view_count"),
             video=video,
             stream_mode=mode,
         )
@@ -311,7 +338,11 @@ class YouTube:
         right_norm = self._normalize_text(self._clean_query_value(right))
         if not left_norm or not right_norm:
             return False
-        return left_norm == right_norm or left_norm in right_norm or right_norm in left_norm
+        return (
+            left_norm == right_norm
+            or left_norm in right_norm
+            or right_norm in left_norm
+        )
 
     def _is_same_track(self, source: Track, candidate: Track) -> bool:
         if not source or not candidate:
@@ -333,12 +364,20 @@ class YouTube:
         score = 0
         source_artist = self._primary_artist(source)
         candidate_artist = self._primary_artist(candidate)
-        if source_artist and candidate_artist and self._text_matches(source_artist, candidate_artist):
+        if (
+            source_artist
+            and candidate_artist
+            and self._text_matches(source_artist, candidate_artist)
+        ):
             score += 8
 
         source_album = self._clean_query_value(getattr(source, "album", None))
         candidate_album = self._clean_query_value(getattr(candidate, "album", None))
-        if source_album and candidate_album and self._text_matches(source_album, candidate_album):
+        if (
+            source_album
+            and candidate_album
+            and self._text_matches(source_album, candidate_album)
+        ):
             score += 3
 
         source_title = self._clean_query_value(getattr(source, "title", None))
@@ -346,7 +385,10 @@ class YouTube:
         if source_title and candidate_title:
             if self._text_matches(source_title, candidate_title):
                 score -= 10
-            elif any(token in candidate_title.lower() for token in ("mix", "playlist", "live", "hour", "loop")):
+            elif any(
+                token in candidate_title.lower()
+                for token in ("mix", "playlist", "live", "hour", "loop")
+            ):
                 score -= 2
         return score
 
@@ -378,7 +420,9 @@ class YouTube:
             score += 1
         return score
 
-    async def _extract_info(self, query: str, *, extract_flat: bool = False) -> dict | None:
+    async def _extract_info(
+        self, query: str, *, extract_flat: bool = False
+    ) -> dict | None:
         opts = {
             "quiet": True,
             "no_warnings": True,
@@ -411,7 +455,9 @@ class YouTube:
 
         if host == "open.spotify.com" or host.endswith(".spotify.com"):
             title, artist, album = await self._resolve_spotify_metadata(url)
-            parts = [part.strip() for part in [artist, title, album] if part and part.strip()]
+            parts = [
+                part.strip() for part in [artist, title, album] if part and part.strip()
+            ]
             if parts:
                 query = " - ".join(dict.fromkeys(parts))
                 return await self.search(query, m_id, video=video, mode=mode)
@@ -441,7 +487,9 @@ class YouTube:
         title = info.get("track") or info.get("title") or ""
         artist = info.get("artist") or info.get("uploader") or info.get("channel") or ""
         album = info.get("album") or ""
-        parts = [part.strip() for part in [artist, title, album] if part and part.strip()]
+        parts = [
+            part.strip() for part in [artist, title, album] if part and part.strip()
+        ]
         if not parts:
             return None
 
@@ -509,7 +557,11 @@ class YouTube:
                 score += 5
 
             primary_artist = self._primary_artist(track)
-            if artist_hint and primary_artist and self._text_matches(primary_artist, artist_hint):
+            if (
+                artist_hint
+                and primary_artist
+                and self._text_matches(primary_artist, artist_hint)
+            ):
                 score += 7
 
             if track.duration_sec > 0:
@@ -523,7 +575,9 @@ class YouTube:
         scored.sort(key=lambda item: item[0], reverse=True)
         return [track for _, track in scored[:limit]]
 
-    async def search(self, query: str, m_id: int, video: bool = False, mode: str = "balanced") -> Track | None:
+    async def search(
+        self, query: str, m_id: int, video: bool = False, mode: str = "balanced"
+    ) -> Track | None:
         mode = self.normalize_mode(mode)
 
         resolved_id = self.extract_video_id(query)
@@ -541,12 +595,16 @@ class YouTube:
                 )
 
         try:
-            _search = VideosSearch(query, limit=1, language="en", region="US", with_live=False)
+            _search = VideosSearch(
+                query, limit=1, language="en", region="US", with_live=False
+            )
             results = await _search.next()
         except Exception:
             return None
         if results and results["result"]:
-            return self._build_track(data=results["result"][0], m_id=m_id, video=video, mode=mode)
+            return self._build_track(
+                data=results["result"][0], m_id=m_id, video=video, mode=mode
+            )
         return None
 
     async def search_best(
@@ -697,9 +755,15 @@ class YouTube:
                 seen.add(built.id)
                 suggestions[built.id] = built
 
-        items = [item for item in suggestions.values() if not self._is_same_track(track, item)]
+        items = [
+            item
+            for item in suggestions.values()
+            if not self._is_same_track(track, item)
+        ]
         random.Random(f"{getattr(track, 'id', 'mix')}:{refresh_token}").shuffle(items)
-        items.sort(key=lambda item: self._related_track_score(track, item), reverse=True)
+        items.sort(
+            key=lambda item: self._related_track_score(track, item), reverse=True
+        )
         return items[:limit]
 
     async def _extract_related_candidates(
@@ -708,7 +772,9 @@ class YouTube:
         *,
         mode: str = "balanced",
     ) -> list[Track]:
-        track_id = self.extract_video_id(getattr(track, "id", None) or getattr(track, "url", None))
+        track_id = self.extract_video_id(
+            getattr(track, "id", None) or getattr(track, "url", None)
+        )
         if not track_id:
             return []
 
@@ -782,7 +848,9 @@ class YouTube:
             "audio_url": audio_url,
             "duration": duration,
             "title": self.trim_title(info.get("title"), limit=64) or "Unknown Title",
-            "performer": info.get("artist") or info.get("uploader") or info.get("channel"),
+            "performer": info.get("artist")
+            or info.get("uploader")
+            or info.get("channel"),
         }
 
     async def download(

@@ -19,7 +19,9 @@ class Inline:
         return self.ikb(*args, style=self.button_styles[style], **kwargs)
 
     def cancel_dl(self, text) -> types.InlineKeyboardMarkup:
-        return self.ikm([[self.button(text=text, callback_data="cancel_dl", style="danger")]])
+        return self.ikm(
+            [[self.button(text=text, callback_data="cancel_dl", style="danger")]]
+        )
 
     def controls(
         self,
@@ -31,21 +33,53 @@ class Inline:
         keyboard = []
         if status:
             keyboard.append(
-                [self.button(text=status, callback_data=f"controls status {chat_id}", style="primary")]
+                [
+                    self.button(
+                        text=status,
+                        callback_data=f"controls status {chat_id}",
+                        style="primary",
+                    )
+                ]
             )
         elif timer:
             keyboard.append(
-                [self.button(text=timer, callback_data=f"controls status {chat_id}", style="primary")]
+                [
+                    self.button(
+                        text=timer,
+                        callback_data=f"controls status {chat_id}",
+                        style="primary",
+                    )
+                ]
             )
 
         if not remove:
             keyboard.append(
                 [
-                    self.button(text="▷", callback_data=f"controls resume {chat_id}", style="primary"),
-                    self.button(text="II", callback_data=f"controls pause {chat_id}", style="primary"),
-                    self.button(text="⥁", callback_data=f"controls replay {chat_id}", style="primary"),
-                    self.button(text="‣‣I", callback_data=f"controls skip {chat_id}", style="primary"),
-                    self.button(text="▢", callback_data=f"controls stop {chat_id}", style="primary"),
+                    self.button(
+                        text="▷",
+                        callback_data=f"controls resume {chat_id}",
+                        style="primary",
+                    ),
+                    self.button(
+                        text="II",
+                        callback_data=f"controls pause {chat_id}",
+                        style="primary",
+                    ),
+                    self.button(
+                        text="⥁",
+                        callback_data=f"controls replay {chat_id}",
+                        style="primary",
+                    ),
+                    self.button(
+                        text="‣‣I",
+                        callback_data=f"controls skip {chat_id}",
+                        style="primary",
+                    ),
+                    self.button(
+                        text="▢",
+                        callback_data=f"controls stop {chat_id}",
+                        style="primary",
+                    ),
                 ]
             )
             keyboard.append(
@@ -65,8 +99,12 @@ class Inline:
         if back:
             rows = [
                 [
-                    self.button(text=_lang["back"], callback_data="help back", style="primary"),
-                    self.button(text=_lang["close"], callback_data="help close", style="danger"),
+                    self.button(
+                        text=_lang["back"], callback_data="help back", style="primary"
+                    ),
+                    self.button(
+                        text=_lang["close"], callback_data="help close", style="danger"
+                    ),
                 ]
             ]
         else:
@@ -87,7 +125,9 @@ class Inline:
             ]
             buttons = [
                 self.button(
-                    text=_lang[f"help_{cb}"], callback_data=f"help {cb}", style="primary"
+                    text=_lang[f"help_{cb}"],
+                    callback_data=f"help {cb}",
+                    style="primary",
                 )
                 for cb in cbs
             ]
@@ -109,7 +149,9 @@ class Inline:
         return self.ikm(rows)
 
     def ping_markup(self, text: str) -> types.InlineKeyboardMarkup:
-        return self.ikm([[self.button(text=text, url=config.SUPPORT_CHAT, style="primary")]])
+        return self.ikm(
+            [[self.button(text=text, url=config.SUPPORT_CHAT, style="primary")]]
+        )
 
     def play_queued(
         self, chat_id: int, item_id: str, _text: str
@@ -118,7 +160,9 @@ class Inline:
             [
                 [
                     self.button(
-                        text=_text, callback_data=f"controls force {chat_id} {item_id}", style="success"
+                        text=_text,
+                        callback_data=f"controls force {chat_id} {item_id}",
+                        style="success",
                     )
                 ]
             ]
@@ -149,7 +193,15 @@ class Inline:
     ) -> types.InlineKeyboardMarkup:
         _action = "pause" if playing else "resume"
         return self.ikm(
-            [[self.button(text=_text, callback_data=f"controls {_action} {chat_id} q", style="success" if not playing else "primary")]]
+            [
+                [
+                    self.button(
+                        text=_text,
+                        callback_data=f"controls {_action} {chat_id} q",
+                        style="success" if not playing else "primary",
+                    )
+                ]
+            ]
         )
 
     def settings_markup(
@@ -162,7 +214,7 @@ class Inline:
         language: str,
         stream_mode: str,
         chat_id: int,
-        ) -> types.InlineKeyboardMarkup:
+    ) -> types.InlineKeyboardMarkup:
         _on = lang["autoplay_switch_on"]
         _off = lang["autoplay_switch_off"]
         return self.ikm(

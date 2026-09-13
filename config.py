@@ -24,7 +24,9 @@ class Config:
         self.LOGGER_ID = self._to_int(getenv("LOGGER_ID"), default=None)
         self.OWNER_ID = self._to_int(getenv("OWNER_ID"), default=None)
 
-        self.DURATION_LIMIT = self._to_int(getenv("DURATION_LIMIT"), default=60000) * 60000
+        self.DURATION_LIMIT = (
+            self._to_int(getenv("DURATION_LIMIT"), default=60000) * 60000
+        )
         self.QUEUE_LIMIT = self._to_int(getenv("QUEUE_LIMIT"), default=20)
         self.PLAYLIST_LIMIT = self._to_int(getenv("PLAYLIST_LIMIT"), default=20)
 
@@ -43,8 +45,12 @@ class Config:
         self.LANG_CODE = getenv("LANG_CODE", "en")
 
         self.COOKIES_URL = self._parse_cookies_url(getenv("COOKIES_URL", ""))
-        self.DEFAULT_THUMB = getenv("DEFAULT_THUMB", "https://i.ibb.co/fVymn3T2/photo-2026-04-17-20-43-52.jpg")
-        self.PING_IMG = getenv("PING_IMG", "https://i.ibb.co/bMX0hDSk/photo-2026-04-17-20-43-55.jpg")
+        self.DEFAULT_THUMB = getenv(
+            "DEFAULT_THUMB", "https://i.ibb.co/fVymn3T2/photo-2026-04-17-20-43-52.jpg"
+        )
+        self.PING_IMG = getenv(
+            "PING_IMG", "https://i.ibb.co/bMX0hDSk/photo-2026-04-17-20-43-55.jpg"
+        )
         self.START_IMG = getenv("START_IMG", "https://i.ibb.co/SXwDGxNJ/image.jpg")
 
     @staticmethod
@@ -66,11 +72,15 @@ class Config:
     def _parse_cookies_url(value):
         urls = []
         for url in str(value).split():
-            if url.startswith("https://batbin.me/") or url.startswith("http://batbin.me/"):
+            if url.startswith("https://batbin.me/") or url.startswith(
+                "http://batbin.me/"
+            ):
                 urls.append(url)
         return urls
 
     def check(self):
         missing = [var for var in self.REQUIRED_FIELDS if not getattr(self, var)]
         if missing:
-            raise SystemExit(f"Missing required environment variables: {', '.join(missing)}")
+            raise SystemExit(
+                f"Missing required environment variables: {', '.join(missing)}"
+            )

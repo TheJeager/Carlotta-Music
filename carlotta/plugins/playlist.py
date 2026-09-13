@@ -16,7 +16,11 @@ PlaylistItem = dict[str, Any]
 
 
 def _value(item, key, default=None):
-    return item.get(key, default) if isinstance(item, dict) else getattr(item, key, default)
+    return (
+        item.get(key, default)
+        if isinstance(item, dict)
+        else getattr(item, key, default)
+    )
 
 
 def _title(item, fallback="Unknown Title"):
@@ -50,24 +54,50 @@ async def _owner_from_code(code: str) -> int | None:
     return int(doc["_user_id"]) if doc and doc.get("_user_id") else None
 
 
-def _playlist_markup(user_id: int, index: int, total: int, code: str) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
+def _playlist_markup(
+    user_id: int, index: int, total: int, code: str
+) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
         [
-            InlineKeyboardButton("⟨", callback_data=f"playlist nav {user_id} saved {index - 1}"),
-            InlineKeyboardButton(f"{index + 1}/{total}", callback_data=f"playlist noop {user_id}"),
-            InlineKeyboardButton("⟩", callback_data=f"playlist nav {user_id} saved {index + 1}"),
-        ],
-        [
-            InlineKeyboardButton("▶ Play", callback_data=f"playlist play {user_id} saved {index}"),
-            InlineKeyboardButton("▶ Play All", callback_data=f"playlist playall {user_id} {code}"),
-        ],
-        [
-            InlineKeyboardButton("🗑 Remove", callback_data=f"playlist delete {user_id} saved {index}"),
-            InlineKeyboardButton("🔄 Refresh", callback_data=f"playlist nav {user_id} saved {index}"),
-        ],
-        [InlineKeyboardButton(f"CODE: {code}", callback_data=f"playlist noop {user_id}")],
-        [InlineKeyboardButton("✕ Close", callback_data=f"playlist close {user_id}")],
-    ])
+            [
+                InlineKeyboardButton(
+                    "⟨", callback_data=f"playlist nav {user_id} saved {index - 1}"
+                ),
+                InlineKeyboardButton(
+                    f"{index + 1}/{total}", callback_data=f"playlist noop {user_id}"
+                ),
+                InlineKeyboardButton(
+                    "⟩", callback_data=f"playlist nav {user_id} saved {index + 1}"
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    "▶ Play", callback_data=f"playlist play {user_id} saved {index}"
+                ),
+                InlineKeyboardButton(
+                    "▶ Play All", callback_data=f"playlist playall {user_id} {code}"
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    "🗑 Remove", callback_data=f"playlist delete {user_id} saved {index}"
+                ),
+                InlineKeyboardButton(
+                    "🔄 Refresh", callback_data=f"playlist nav {user_id} saved {index}"
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    f"CODE: {code}", callback_data=f"playlist noop {user_id}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "✕ Close", callback_data=f"playlist close {user_id}"
+                )
+            ],
+        ]
+    )
 
 
 async def _ensure_chat(query: types.CallbackQuery, chat_id: int) -> str | None:
@@ -77,18 +107,30 @@ async def _ensure_chat(query: types.CallbackQuery, chat_id: int) -> str | None:
         return query.lang["play_queue_full"].format(config.QUEUE_LIMIT)
     if await db.get_play_mode(chat_id):
         admins = await db.get_admins(chat_id)
-        if query.from_user.id not in admins and not await db.is_auth(chat_id, query.from_user.id) and query.from_user.id not in app.sudoers:
+        if (
+            query.from_user.id not in admins
+            and not await db.is_auth(chat_id, query.from_user.id)
+            and query.from_user.id not in app.sudoers
+        ):
             return query.lang["play_admin"]
     if chat_id in db.active_calls:
         return None
     client = await db.get_client(chat_id)
     try:
         member = await app.get_chat_member(chat_id, client.id)
-        if member.status in [enums.ChatMemberStatus.BANNED, enums.ChatMemberStatus.RESTRICTED]:
+        if member.status in [
+            enums.ChatMemberStatus.BANNED,
+            enums.ChatMemberStatus.RESTRICTED,
+        ]:
             try:
                 await app.unban_chat_member(chat_id, client.id)
             except Exception:
-                return query.lang["play_banned"].format(app.name, client.id, client.mention, f"@{client.username}" if client.username else None)
+                return query.lang["play_banned"].format(
+                    app.name,
+                    client.id,
+                    client.mention,
+                    f"@{client.username}" if client.username else None,
+                )
     except py_errors.ChatAdminRequired:
         return query.lang["admin_required"]
     except py_errors.UserNotParticipant:
@@ -147,7 +189,9 @@ async def _resolve_track(message: types.Message):
     if len(message.command) < 2:
         return _current(message.chat.id)
     query = " ".join(message.command[1:]).strip()
-    status = await message.reply_text(message.lang["playlist_add_searching"], quote=True)
+    status = await message.reply_text(
+        message.lang["playlist_add_searching"], quote=True
+    )
     mode = await db.get_stream_mode(message.chat.id)
     try:
         if yt.is_music_url(query):
@@ -159,7 +203,9 @@ async def _resolve_track(message: types.Message):
         logger.warning("Playlist search failed: %s", ex)
         track = None
     if not track:
-        await status.edit_text(message.lang["playlist_add_not_found"].format(config.SUPPORT_CHAT))
+        await status.edit_text(
+            message.lang["playlist_add_not_found"].format(config.SUPPORT_CHAT)
+        )
         return False
     track.user = message.from_user.mention
     try:
@@ -206,7 +252,9 @@ async def _render(target, user, lang_dict, index=0, code=None):
     if isinstance(target, types.CallbackQuery):
         try:
             if thumb:
-                await target.edit_message_media(InputMediaPhoto(thumb, caption=text), reply_markup=markup)
+                await target.edit_message_media(
+                    InputMediaPhoto(thumb, caption=text), reply_markup=markup
+                )
             elif target.message.photo:
                 await target.edit_message_caption(text, reply_markup=markup)
             else:
@@ -220,7 +268,9 @@ async def _render(target, user, lang_dict, index=0, code=None):
                 pass
     else:
         if thumb:
-            await target.reply_photo(thumb, caption=text, reply_markup=markup, quote=True)
+            await target.reply_photo(
+                thumb, caption=text, reply_markup=markup, quote=True
+            )
         else:
             await target.reply_text(text, reply_markup=markup, quote=True)
 
@@ -231,7 +281,19 @@ async def _play_item(query, item):
     if error:
         return error
     mode = await db.get_stream_mode(chat_id)
-    track = Track(id=item["id"], channel_name=item.get("channel_name"), duration=item.get("duration") or "00:00", duration_sec=item.get("duration_sec", 0), file_path=_file(item), stream_mode=item.get("stream_mode") or mode, title=item.get("title") or "Unknown Title", url=_link(item), thumbnail=item.get("thumbnail"), user=query.from_user.mention, video=item.get("video", False))
+    track = Track(
+        id=item["id"],
+        channel_name=item.get("channel_name"),
+        duration=item.get("duration") or "00:00",
+        duration_sec=item.get("duration_sec", 0),
+        file_path=_file(item),
+        stream_mode=item.get("stream_mode") or mode,
+        title=item.get("title") or "Unknown Title",
+        url=_link(item),
+        thumbnail=item.get("thumbnail"),
+        user=query.from_user.mention,
+        video=item.get("video", False),
+    )
     if not track.file_path and yt.is_stream_url(track.url):
         track.file_path = track.url
     if track.duration_sec > config.DURATION_LIMIT:
@@ -239,11 +301,29 @@ async def _play_item(query, item):
     await db.add_playlist_history(query.from_user.id, track)
     position = queue.add(chat_id, track)
     if position != 0 or await db.get_call(chat_id):
-        await query.message.reply_text(query.lang["play_queued"].format(position, track.url, track.title, track.duration, query.from_user.mention), reply_markup=buttons.play_queued(chat_id, track.id, query.lang["play_now"]), quote=False, disable_web_page_preview=True)
+        await query.message.reply_text(
+            query.lang["play_queued"].format(
+                position,
+                track.url,
+                track.title,
+                track.duration,
+                query.from_user.mention,
+            ),
+            reply_markup=buttons.play_queued(chat_id, track.id, query.lang["play_now"]),
+            quote=False,
+            disable_web_page_preview=True,
+        )
         return query.lang["playlist_play_queued"]
-    status = await query.message.reply_text(query.lang["play_downloading"] if not track.file_path else query.lang["play_next"], quote=False)
+    status = await query.message.reply_text(
+        query.lang["play_downloading"]
+        if not track.file_path
+        else query.lang["play_next"],
+        quote=False,
+    )
     if not track.file_path:
-        track.file_path = await yt.download(track.id, video=track.video, mode=track.stream_mode)
+        track.file_path = await yt.download(
+            track.id, video=track.video, mode=track.stream_mode
+        )
     if not track.file_path:
         queue.remove_current(chat_id)
         await status.edit_text(query.lang["error_no_file"].format(config.SUPPORT_CHAT))
@@ -265,16 +345,37 @@ async def _play_all(query, user_id: int, code: str):
     chat_id = query.message.chat.id
     available = max(config.QUEUE_LIMIT - len(queue.get_queue(chat_id)), 0)
     if available <= 0:
-        return await query.answer(query.lang["play_queue_full"].format(config.QUEUE_LIMIT), show_alert=True)
+        return await query.answer(
+            query.lang["play_queue_full"].format(config.QUEUE_LIMIT), show_alert=True
+        )
     selected = items[:available]
     mode = await db.get_stream_mode(chat_id)
     for item in selected:
-        queue.add(chat_id, Track(id=item["id"], channel_name=item.get("channel_name"), duration=item.get("duration") or "00:00", duration_sec=item.get("duration_sec", 0), file_path=_file(item), stream_mode=item.get("stream_mode") or mode, title=item.get("title") or "Unknown Title", url=_link(item), thumbnail=item.get("thumbnail"), user=query.from_user.mention, video=item.get("video", False)))
+        queue.add(
+            chat_id,
+            Track(
+                id=item["id"],
+                channel_name=item.get("channel_name"),
+                duration=item.get("duration") or "00:00",
+                duration_sec=item.get("duration_sec", 0),
+                file_path=_file(item),
+                stream_mode=item.get("stream_mode") or mode,
+                title=item.get("title") or "Unknown Title",
+                url=_link(item),
+                thumbnail=item.get("thumbnail"),
+                user=query.from_user.mention,
+                video=item.get("video", False),
+            ),
+        )
     if await db.get_call(chat_id):
-        return await query.answer(f"Added {len(selected)} tracks to the queue.", show_alert=True)
+        return await query.answer(
+            f"Added {len(selected)} tracks to the queue.", show_alert=True
+        )
     current = queue.get_current(chat_id)
     if current and not current.file_path:
-        current.file_path = await yt.download(current.id, video=current.video, mode=current.stream_mode)
+        current.file_path = await yt.download(
+            current.id, video=current.video, mode=current.stream_mode
+        )
     if not current or not current.file_path:
         queue.remove_current(chat_id)
         return await query.answer("Unable to load the first track.", show_alert=True)
@@ -300,7 +401,10 @@ async def add_playlist_cmd(_, m: types.Message):
     if not track:
         return await m.reply_text(m.lang["playlist_add_usage"], quote=True)
     _, text, code = await _save(m.from_user.id, track, m.lang)
-    await m.reply_text(f"{text}\n\n<b>Playlist Code:</b> <code>{code}</code>\nUse <code>/playlist {code}</code> to open it.", quote=True)
+    await m.reply_text(
+        f"{text}\n\n<b>Playlist Code:</b> <code>{code}</code>\nUse <code>/playlist {code}</code> to open it.",
+        quote=True,
+    )
 
 
 @app.on_message(filters.command(["delpl", "delplaylist"]) & ~app.bl_users)
@@ -310,7 +414,12 @@ async def del_playlist_cmd(_, m: types.Message):
     if not item:
         return await m.reply_text(m.lang["playlist_no_active"], quote=True)
     removed = await db.del_playlist_item(m.from_user.id, item.id)
-    await m.reply_text(m.lang["playlist_removed"].format(item.title) if removed else m.lang["playlist_missing"].format(item.title), quote=True)
+    await m.reply_text(
+        m.lang["playlist_removed"].format(item.title)
+        if removed
+        else m.lang["playlist_missing"].format(item.title),
+        quote=True,
+    )
 
 
 @app.on_callback_query(filters.regex(r"^playlist\s") & ~app.bl_users)
@@ -363,6 +472,8 @@ async def playlist_callbacks(_, query: types.CallbackQuery):
         return await _render(query, query.from_user, query.lang, index)
     if action == "delete":
         removed = await db.del_playlist_item(query.from_user.id, item["id"])
-        await query.answer("Removed from playlist." if removed else "Track not found.", show_alert=True)
+        await query.answer(
+            "Removed from playlist." if removed else "Track not found.", show_alert=True
+        )
         return await _render(query, query.from_user, query.lang, max(index - 1, 0))
     await query.answer(query.lang["playlist_action_invalid"], show_alert=True)

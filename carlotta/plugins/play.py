@@ -1,5 +1,3 @@
-
-
 import asyncio
 from pathlib import Path
 from html import escape
@@ -77,7 +75,9 @@ async def play_hndlr(
             file = await yt.search(url, sent.id, video=video, mode=stream_mode)
         elif yt.is_music_url(url):
             await sent.edit_text(m.lang["play_resolving"])
-            file = await yt.resolve_music_url(url, sent.id, video=video, mode=stream_mode)
+            file = await yt.resolve_music_url(
+                url, sent.id, video=video, mode=stream_mode
+            )
         elif m3u8:
             file = await tg.process_m3u8(url, sent.id, video)
             file.stream_mode = stream_mode
@@ -134,7 +134,9 @@ async def play_hndlr(
                 ),
             )
             if await db.get_clean(m.chat.id):
-                clean.create_background_task(clean.delete_message_after(m.chat.id, sent.id))
+                clean.create_background_task(
+                    clean.delete_message_after(m.chat.id, sent.id)
+                )
 
             if tracks:
                 added = playlist_to_queue(m.chat.id, tracks)
@@ -143,7 +145,9 @@ async def play_hndlr(
                     text=m.lang["playlist_queued"].format(len(tracks)) + added,
                 )
                 if await db.get_clean(m.chat.id):
-                    clean.create_background_task(clean.delete_message_after(m.chat.id, msg.id))
+                    clean.create_background_task(
+                        clean.delete_message_after(m.chat.id, msg.id)
+                    )
             return
 
     _thumb = None
@@ -155,9 +159,7 @@ async def play_hndlr(
                 _thumb = await thumb.generate(file)
         else:
             await sent.edit_text(m.lang["play_downloading"])
-            tasks = [
-                yt.download(file.id, video=video, mode=file.stream_mode)
-            ]
+            tasks = [yt.download(file.id, video=video, mode=file.stream_mode)]
             if config.THUMB_GEN:
                 tasks.append(thumb.generate(file))
 

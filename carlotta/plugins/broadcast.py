@@ -1,5 +1,3 @@
-
-
 import os
 import asyncio
 
@@ -9,6 +7,7 @@ from carlotta import app, db, lang
 
 
 broadcasting = False
+
 
 @app.on_message(filters.command(["broadcast"]) & app.sudoers)
 @lang.language()
@@ -34,14 +33,16 @@ async def _broadcast(_, message: types.Message):
     broadcasting = True
 
     await msg.forward(app.logger)
-    await (await app.send_message(
-        chat_id=app.logger, 
-        text=message.lang["gcast_log"].format(
-            message.from_user.id,
-            message.from_user.mention,
-            message.text,
+    await (
+        await app.send_message(
+            chat_id=app.logger,
+            text=message.lang["gcast_log"].format(
+                message.from_user.id,
+                message.from_user.mention,
+                message.text,
+            ),
         )
-    )).pin(disable_notification=False)
+    ).pin(disable_notification=False)
     await asyncio.sleep(5)
 
     failed = ""
@@ -88,11 +89,12 @@ async def _stop_gcast(_, message: types.Message):
         return await message.reply_text(message.lang["gcast_inactive"])
 
     broadcasting = False
-    await (await app.send_message(
-        chat_id=app.logger,
-        text=message.lang["gcast_stop_log"].format(
-            message.from_user.id,
-            message.from_user.mention
+    await (
+        await app.send_message(
+            chat_id=app.logger,
+            text=message.lang["gcast_stop_log"].format(
+                message.from_user.id, message.from_user.mention
+            ),
         )
-    )).pin(disable_notification=False)
+    ).pin(disable_notification=False)
     await message.reply_text(message.lang["gcast_stop"])

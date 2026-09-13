@@ -1,5 +1,3 @@
-
-
 from html import escape
 
 from pyrogram import filters, types
@@ -32,10 +30,14 @@ async def _queue_func(_, m: types.Message):
 
     _media = _queue[0]
     _thumb = (
-        await thumb.generate(_media)
-        if isinstance(_media, Track)
-        else config.DEFAULT_THUMB
-    ) if config.THUMB_GEN else None
+        (
+            await thumb.generate(_media)
+            if isinstance(_media, Track)
+            else config.DEFAULT_THUMB
+        )
+        if config.THUMB_GEN
+        else None
+    )
     if _thumb:
         clean.register_thumb(m.chat.id, _thumb)
     _text = m.lang["queue_curr"].format(
@@ -67,10 +69,10 @@ async def _queue_func(_, m: types.Message):
 
     _playing = await db.playing(m.chat.id)
     _buttons = buttons.queue_markup(
-            m.chat.id,
-            m.lang["playing"] if _playing else m.lang["paused"],
-            _playing,
-        )
+        m.chat.id,
+        m.lang["playing"] if _playing else m.lang["paused"],
+        _playing,
+    )
     if _thumb:
         await _reply.edit_media(
             media=types.InputMediaPhoto(

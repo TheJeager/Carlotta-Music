@@ -30,31 +30,39 @@ tasks = []
 boot = time.time()
 
 from carlotta.core.bot import Bot
+
 app = Bot()
 
 from carlotta.core.dir import ensure_dirs
+
 ensure_dirs()
 
 from carlotta.core.userbot import Userbot
+
 userbot = Userbot()
 
 from carlotta.core.mongo import MongoDB
+
 db = MongoDB()
 
 from carlotta.core.lang import Language
+
 lang = Language()
 
 from carlotta.core.telegram import Telegram
 from carlotta.core.youtube import YouTube
+
 tg = Telegram()
 yt = YouTube()
 
 from carlotta.helpers import Cleaner, Queue, Thumbnail
+
 queue = Queue()
 thumb = Thumbnail()
 clean = Cleaner()
 
 from carlotta.core.calls import TgCall
+
 anon = TgCall()
 
 

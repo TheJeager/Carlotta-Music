@@ -3,6 +3,7 @@ import ast
 import traceback
 from typing import Optional
 
+
 async def meval(code: str, globs: dict, **kwargs):
     """
     Safely evaluate data-only input.
@@ -16,7 +17,9 @@ async def meval(code: str, globs: dict, **kwargs):
     return ast.literal_eval(code)
 
 
-def format_exception(exc: BaseException, tb: Optional[list[traceback.FrameSummary]] = None) -> str:
+def format_exception(
+    exc: BaseException, tb: Optional[list[traceback.FrameSummary]] = None
+) -> str:
     """Format exception traceback into a readable string."""
     if tb is None:
         tb = traceback.extract_tb(exc.__traceback__)

@@ -1,4 +1,3 @@
-
 import asyncio
 from pyrogram import enums, filters, types
 
@@ -52,7 +51,9 @@ async def start(_, message: types.Message):
         await db.add_chat(message.chat.id)
 
 
-@app.on_message(filters.command(["playmode", "settings"]) & filters.group & ~app.bl_users)
+@app.on_message(
+    filters.command(["playmode", "settings"]) & filters.group & ~app.bl_users
+)
 @lang.language()
 async def settings(_, message: types.Message):
     admin_only = await db.get_play_mode(message.chat.id)

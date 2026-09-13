@@ -57,7 +57,9 @@ class Cleaner:
         if error is not None:
             logger.debug("Background clean task failed: %s", error)
 
-    def create_background_task(self, coroutine: Coroutine[Any, Any, Any]) -> asyncio.Task:
+    def create_background_task(
+        self, coroutine: Coroutine[Any, Any, Any]
+    ) -> asyncio.Task:
         task = asyncio.create_task(coroutine)
         self._background_tasks.add(task)
         task.add_done_callback(self._on_task_done)

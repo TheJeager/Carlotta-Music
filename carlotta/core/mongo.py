@@ -1,5 +1,3 @@
-
-
 from random import randint
 from time import time
 
@@ -169,7 +167,7 @@ class MongoDB:
             self.assistant[chat_id] = num
 
         if not anon.clients:
-             raise RuntimeError("No assistant clients available.")
+            raise RuntimeError("No assistant clients available.")
         return anon.clients[self.assistant[chat_id] - 1]
 
     async def get_client(self, chat_id: int):
@@ -409,10 +407,13 @@ class MongoDB:
         }
 
     async def get_playlist(self, user_id: int, section: str = "saved") -> list[dict]:
-        doc = await self.usersdb.find_one(
-            {"_id": user_id},
-            {"playlist_saved": 1, "playlist_history": 1},
-        ) or {}
+        doc = (
+            await self.usersdb.find_one(
+                {"_id": user_id},
+                {"playlist_saved": 1, "playlist_history": 1},
+            )
+            or {}
+        )
         key = "playlist_saved" if section == "saved" else "playlist_history"
         return doc.get(key, [])
 
@@ -470,7 +471,6 @@ class MongoDB:
             {"$set": {"file_id": file_id}},
             upsert=True,
         )
-
 
     async def migrate_coll(self) -> None:
         logger.info("Migrating users and chats from old collections...")

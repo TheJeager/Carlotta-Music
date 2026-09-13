@@ -38,6 +38,8 @@ class VoiceOptimizer:
                     return
                 except Exception as ex:
                     last_error = ex
-                    logger.warning("Fast join retry in %s (%s)", chat_id, type(ex).__name__)
+                    logger.warning(
+                        "Fast join retry in %s (%s)", chat_id, type(ex).__name__
+                    )
             if last_error:
                 raise last_error

@@ -1,5 +1,3 @@
-
-
 from pyrogram import filters, types
 
 from carlotta import app, db, lang

@@ -10,11 +10,17 @@ from carlotta.helpers import admin_check, buttons
 async def autoplay_toggle(_, m: types.Message):
     chat_id = m.chat.id
     enabled = await db.get_autoplay(chat_id)
-    status = m.lang["autoplay_status_enabled"] if enabled else m.lang["autoplay_status_disabled"]
+    status = (
+        m.lang["autoplay_status_enabled"]
+        if enabled
+        else m.lang["autoplay_status_disabled"]
+    )
     markup = buttons.autoplay_markup(m.lang, chat_id, enabled)
 
     if len(m.command) == 1:
-        return await m.reply_text(m.lang["autoplay_usage"].format(status), reply_markup=markup)
+        return await m.reply_text(
+            m.lang["autoplay_usage"].format(status), reply_markup=markup
+        )
 
     action = m.command[1].lower()
     action_map = {
@@ -26,7 +32,9 @@ async def autoplay_toggle(_, m: types.Message):
         "disabled": False,
     }
     if action not in action_map:
-        return await m.reply_text(m.lang["autoplay_usage"].format(status), reply_markup=markup)
+        return await m.reply_text(
+            m.lang["autoplay_usage"].format(status), reply_markup=markup
+        )
 
     desired = action_map[action]
     if desired == enabled:
@@ -37,7 +45,9 @@ async def autoplay_toggle(_, m: types.Message):
 
     await db.set_autoplay(chat_id, desired)
     key = "autoplay_enabled" if desired else "autoplay_disabled"
-    await m.reply_text(m.lang[key], reply_markup=buttons.autoplay_markup(m.lang, chat_id, desired))
+    await m.reply_text(
+        m.lang[key], reply_markup=buttons.autoplay_markup(m.lang, chat_id, desired)
+    )
 
 
 @app.on_callback_query(filters.regex("^autoplay\\s") & ~app.bl_users)
@@ -69,14 +79,18 @@ async def autoplay_toggle_cb(_, query: types.CallbackQuery):
 
     if action == "enable":
         if enabled:
-            return await query.answer(query.lang["autoplay_already_on"], show_alert=True)
+            return await query.answer(
+                query.lang["autoplay_already_on"], show_alert=True
+            )
         await db.set_autoplay(chat_id, True)
         enabled = True
         status = query.lang["autoplay_status_enabled"]
         await query.answer(query.lang["autoplay_enabled"], show_alert=True)
     elif action == "disable":
         if not enabled:
-            return await query.answer(query.lang["autoplay_already_off"], show_alert=True)
+            return await query.answer(
+                query.lang["autoplay_already_off"], show_alert=True
+            )
         await db.set_autoplay(chat_id, False)
         enabled = False
         status = query.lang["autoplay_status_disabled"]

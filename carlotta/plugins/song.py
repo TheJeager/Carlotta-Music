@@ -8,6 +8,7 @@ from carlotta import app, config, db, lang, yt
 
 INLINE_STORE_CHAT_ID = getattr(config, "LOGGER_ID", None)
 
+
 async def _ensure_mp3(source_file: str, track=None) -> str:
     """
     Converts a source audio file to high-quality MP3 (320kbps)
@@ -16,39 +17,53 @@ async def _ensure_mp3(source_file: str, track=None) -> str:
     mp3_file = f"{os.path.splitext(source_file)[0]}.mp3"
 
     # Base command for high-quality 320kbps CBR conversion
-    command = [
-        "ffmpeg", "-y", "-i", source_file
-    ]
+    command = ["ffmpeg", "-y", "-i", source_file]
 
     thumb_path = None
     if track and track.thumbnail:
         from carlotta import thumb
+
         # Temporarily generate/get thumbnail path
-        thumb_path = await thumb.save_thumb(f"cache/inline_thumb_{track.id}.jpg", track.thumbnail)
+        thumb_path = await thumb.save_thumb(
+            f"cache/inline_thumb_{track.id}.jpg", track.thumbnail
+        )
         if thumb_path and os.path.exists(thumb_path):
             command.extend(["-i", thumb_path])
 
-    command.extend([
-        "-vn",
-        "-acodec", "libmp3lame",
-        "-b:a", "320k",
-    ])
+    command.extend(
+        [
+            "-vn",
+            "-acodec",
+            "libmp3lame",
+            "-b:a",
+            "320k",
+        ]
+    )
 
     if track:
         # Embed metadata
         title = track.title or "Unknown"
         performer = track.channel_name or "Radha Player"
-        command.extend([
-            "-metadata", f"title={title}",
-            "-metadata", f"artist={performer}",
-        ])
+        command.extend(
+            [
+                "-metadata",
+                f"title={title}",
+                "-metadata",
+                f"artist={performer}",
+            ]
+        )
         if thumb_path and os.path.exists(thumb_path):
             # Map the second input (thumbnail) as video stream and set as attachment
-            command.extend([
-                "-map", "0:a",
-                "-map", "1:v",
-                "-disposition:v", "attached_pic",
-            ])
+            command.extend(
+                [
+                    "-map",
+                    "0:a",
+                    "-map",
+                    "1:v",
+                    "-disposition:v",
+                    "attached_pic",
+                ]
+            )
 
     command.append(mp3_file)
 
@@ -60,8 +75,10 @@ async def _ensure_mp3(source_file: str, track=None) -> str:
     await process.communicate()
 
     if thumb_path and os.path.exists(thumb_path):
-        try: os.remove(thumb_path)
-        except: pass
+        try:
+            os.remove(thumb_path)
+        except:
+            pass
 
     if process.returncode == 0 and Path(mp3_file).exists():
         if source_file != mp3_file and os.path.exists(source_file):
@@ -88,7 +105,9 @@ async def advanced_song_private(_, m: types.Message):
         mode=stream_mode,
     )
     if not tracks:
-        return await sent.edit_text(m.lang["play_not_found"].format(config.SUPPORT_CHAT))
+        return await sent.edit_text(
+            m.lang["play_not_found"].format(config.SUPPORT_CHAT)
+        )
 
     first_track = tracks[0]
     first_file = await yt.download(first_track.id, video=False, mode=stream_mode)

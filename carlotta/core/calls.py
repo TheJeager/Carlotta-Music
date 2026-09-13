@@ -1,15 +1,21 @@
 import asyncio
 from collections import defaultdict, deque
-from ntgcalls import (ConnectionNotFound, TelegramServerError,
-                      RTMPStreamingUnsupported, ConnectionError)
-from pyrogram.errors import (ChatSendMediaForbidden, ChatSendPhotosForbidden,
-                             MessageIdInvalid)
+from ntgcalls import (
+    ConnectionNotFound,
+    TelegramServerError,
+    RTMPStreamingUnsupported,
+    ConnectionError,
+)
+from pyrogram.errors import (
+    ChatSendMediaForbidden,
+    ChatSendPhotosForbidden,
+    MessageIdInvalid,
+)
 from pyrogram.types import InputMediaPhoto, Message
 from pytgcalls import PyTgCalls, exceptions, types
 from pytgcalls.pytgcalls_session import PyTgCallsSession
 
-from carlotta import (app, clean, config, db, lang, logger,
-                   queue, thumb, userbot, yt)
+from carlotta import app, clean, config, db, lang, logger, queue, thumb, userbot, yt
 from carlotta.helpers import Media, Track, buttons
 
 
@@ -28,7 +34,9 @@ class TgCall(PyTgCalls):
             self.play_next_locks[chat_id] = lock
         return lock
 
-    async def _pick_autoplay_track(self, chat_id: int, current: Track) -> Media | Track | None:
+    async def _pick_autoplay_track(
+        self, chat_id: int, current: Track
+    ) -> Media | Track | None:
         mode = await db.get_stream_mode(chat_id)
         related = await yt.related_tracks(current, limit=20, mode=mode)
         if not related:
@@ -46,7 +54,9 @@ class TgCall(PyTgCalls):
             candidate.user = "Autoplay"
             candidate.stream_mode = mode
             if not candidate.file_path:
-                candidate.file_path = await self._download_with_timeout(chat_id, candidate)
+                candidate.file_path = await self._download_with_timeout(
+                    chat_id, candidate
+                )
             if candidate.file_path:
                 queue.add(chat_id, candidate)
                 return candidate
@@ -114,7 +124,9 @@ class TgCall(PyTgCalls):
         task = self.prefetch_tasks.get(chat_id)
         if task and not task.done():
             task.cancel()
-        self.prefetch_tasks[chat_id] = asyncio.create_task(self._prefetch(chat_id, media))
+        self.prefetch_tasks[chat_id] = asyncio.create_task(
+            self._prefetch(chat_id, media)
+        )
 
     async def pause(self, chat_id: int) -> bool:
         client = await db.get_assistant(chat_id)
@@ -126,7 +138,9 @@ class TgCall(PyTgCalls):
         await db.playing(chat_id, paused=False)
         return await client.resume(chat_id)
 
-    async def _change_volume(self, client: PyTgCalls, chat_id: int, volume: int) -> None:
+    async def _change_volume(
+        self, client: PyTgCalls, chat_id: int, volume: int
+    ) -> None:
         change_volume = getattr(client, "change_volume_call", None)
         if change_volume is None:
             change_volume = getattr(client, "change_volume")
@@ -153,7 +167,6 @@ class TgCall(PyTgCalls):
             await client.leave_call(chat_id, close=False)
         except Exception:
             pass
-
 
     async def play_media(
         self,
@@ -232,7 +245,11 @@ class TgCall(PyTgCalls):
                         )
                     else:
                         await message.edit_text(text, reply_markup=keyboard)
-                except (ChatSendMediaForbidden, ChatSendPhotosForbidden, MessageIdInvalid):
+                except (
+                    ChatSendMediaForbidden,
+                    ChatSendPhotosForbidden,
+                    MessageIdInvalid,
+                ):
                     if _thumb:
                         sent = await app.send_photo(
                             chat_id=chat_id,
@@ -264,7 +281,6 @@ class TgCall(PyTgCalls):
             await self.stop(chat_id)
             await message.edit_text(_lang["error_rtmp"])
 
-
     async def replay(self, chat_id: int) -> None:
         if not await db.get_call(chat_id):
             return
@@ -276,7 +292,6 @@ class TgCall(PyTgCalls):
         msg = await app.send_message(chat_id=chat_id, text=_lang["play_again"])
         media.message_id = msg.id
         await self.play_media(chat_id, msg, media)
-
 
     async def play_next(self, chat_id: int, allow_autoplay: bool = True) -> None:
         lock = self._get_play_next_lock(chat_id)
@@ -295,7 +310,9 @@ class TgCall(PyTgCalls):
                     )
                 await clean.cleanup_chat_thumbs(chat_id)
 
-            media = await self._resolve_next_media(chat_id, current, allow_autoplay=allow_autoplay)
+            media = await self._resolve_next_media(
+                chat_id, current, allow_autoplay=allow_autoplay
+            )
 
             if not media:
                 await self.stop(chat_id)
@@ -312,19 +329,29 @@ class TgCall(PyTgCalls):
                 pass
 
             _lang = await lang.get_lang(chat_id)
-            text = _lang["play_next_autoplay"] if media.user == "Autoplay" else _lang["play_next"]
+            text = (
+                _lang["play_next_autoplay"]
+                if media.user == "Autoplay"
+                else _lang["play_next"]
+            )
             msg = await app.send_message(chat_id=chat_id, text=text)
             if not media.file_path:
                 media.file_path = await self._download_with_timeout(chat_id, media)
                 if not media.file_path:
-                    await msg.edit_text(_lang["error_no_file"].format(config.SUPPORT_CHAT))
+                    await msg.edit_text(
+                        _lang["error_no_file"].format(config.SUPPORT_CHAT)
+                    )
                     for _ in range(5):
-                        media = await self._resolve_next_media(chat_id, current, allow_autoplay=allow_autoplay)
+                        media = await self._resolve_next_media(
+                            chat_id, current, allow_autoplay=allow_autoplay
+                        )
                         if not media:
                             await self.stop(chat_id)
                             return
                         if not media.file_path:
-                            media.file_path = await self._download_with_timeout(chat_id, media)
+                            media.file_path = await self._download_with_timeout(
+                                chat_id, media
+                            )
                         if media.file_path:
                             break
                     else:
@@ -340,7 +367,6 @@ class TgCall(PyTgCalls):
         pings = [client.ping for client in self.clients]
         return round(sum(pings) / len(pings), 2)
 
-
     async def decorators(self, client: PyTgCalls) -> None:
         @client.on_update()
         async def update_handler(_, update: types.Update) -> None:
@@ -353,7 +379,6 @@ class TgCall(PyTgCalls):
                     types.ChatUpdate.Status.CLOSED_VOICE_CHAT,
                 ]:
                     await self.stop(update.chat_id)
-
 
     async def boot(self) -> None:
         PyTgCallsSession.notice_displayed = True

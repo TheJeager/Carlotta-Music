@@ -1,5 +1,3 @@
-
-
 from pyrogram import Client
 
 from carlotta import config, logger

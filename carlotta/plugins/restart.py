@@ -1,5 +1,3 @@
-
-
 import os
 import sys
 import shutil
@@ -52,7 +50,9 @@ async def _restart(_, m: types.Message):
     asyncio.create_task(stop())
     await asyncio.sleep(2)
 
-    try: os.remove("log.txt")
-    except Exception: pass
+    try:
+        os.remove("log.txt")
+    except Exception:
+        pass
 
     os.execl(sys.executable, sys.executable, "-m", "carlotta")

@@ -3,8 +3,7 @@ import signal
 import importlib
 from contextlib import suppress
 
-from carlotta import (anon, app, config, db, logger,
-                   stop, thumb, userbot, yt)
+from carlotta import anon, app, config, db, logger, stop, thumb, userbot, yt
 from carlotta.plugins import all_modules
 
 
@@ -16,6 +15,7 @@ async def idle():
         with suppress(NotImplementedError):
             loop.add_signal_handler(sig, stop_event.set)
     await stop_event.wait()
+
 
 async def main():
     await db.connect()

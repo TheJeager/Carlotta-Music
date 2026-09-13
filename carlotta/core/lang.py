@@ -1,5 +1,3 @@
-
-
 import json
 from functools import wraps
 from pathlib import Path
@@ -94,11 +92,17 @@ class Language:
                 setattr(fallen, "lang", lang_dict)
                 try:
                     return await func(*args, **kwargs)
-                except (errors.ChannelPrivate, errors.MessageIdInvalid, errors.MessageNotModified):
+                except (
+                    errors.ChannelPrivate,
+                    errors.MessageIdInvalid,
+                    errors.MessageNotModified,
+                ):
                     return
                 except (
-                    errors.Forbidden, errors.exceptions.Forbidden,
-                    errors.ChatWriteForbidden, errors.exceptions.ChatWriteForbidden,
+                    errors.Forbidden,
+                    errors.exceptions.Forbidden,
+                    errors.ChatWriteForbidden,
+                    errors.exceptions.ChatWriteForbidden,
                 ):
                     return
 

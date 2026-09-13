@@ -1,5 +1,3 @@
-
-
 import os
 import re
 
@@ -9,7 +7,9 @@ from carlotta import anon, app, clean, config, db, lang, queue, tg, thumb, yt
 from carlotta.helpers import admin_check, buttons, can_manage_vc
 
 
-async def _ensure_callback_play_ready(query: types.CallbackQuery, chat_id: int) -> str | None:
+async def _ensure_callback_play_ready(
+    query: types.CallbackQuery, chat_id: int
+) -> str | None:
     if query.message.chat.type != enums.ChatType.SUPERGROUP:
         return query.lang["playlist_play_group_only"]
 
@@ -47,7 +47,10 @@ async def _ensure_callback_play_ready(query: types.CallbackQuery, chat_id: int) 
                 )
     except errors.ChatAdminRequired:
         return query.lang["admin_required"]
-    except (errors.UserNotParticipant, errors.exceptions.bad_request_400.UserNotParticipant):
+    except (
+        errors.UserNotParticipant,
+        errors.exceptions.bad_request_400.UserNotParticipant,
+    ):
         if query.message.chat.username:
             invite_link = query.message.chat.username
             try:
@@ -381,7 +384,9 @@ async def inline_dl_cb(_, query: types.CallbackQuery):
     await query.answer(query.lang["play_downloading"])
 
     is_video = dl_type == "video"
-    stream_mode = await db.get_stream_mode(query.message.chat.id) if query.message else "balanced"
+    stream_mode = (
+        await db.get_stream_mode(query.message.chat.id) if query.message else "balanced"
+    )
 
     # Get metadata for better file sending
     track = await yt.search(video_id, 0, video=is_video, mode=stream_mode)
