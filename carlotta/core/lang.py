@@ -92,7 +92,10 @@ class Language:
                 setattr(fallen, "lang", lang_dict)
                 try:
                     return await func(*args, **kwargs)
+                except (errors.FloodWait, errors.SlowmodeWait):
+                    return
                 except (
+                    errors.ChannelInvalid,
                     errors.ChannelPrivate,
                     errors.MessageIdInvalid,
                     errors.MessageNotModified,
