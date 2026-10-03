@@ -5,6 +5,7 @@ from ntgcalls import (
     TelegramServerError,
     RTMPStreamingUnsupported,
     ConnectionError,
+    TransportParseException,
 )
 from pyrogram.errors import (
     ChatSendMediaForbidden,
@@ -282,7 +283,13 @@ class TgCall(PyTgCalls):
         except exceptions.NoAudioSourceFound:
             await message.edit_text(_lang["error_no_audio"])
             await self.play_next(chat_id)
-        except (ConnectionError, ConnectionNotFound, TelegramServerError, TimeoutError):
+        except (
+            ConnectionError,
+            ConnectionNotFound,
+            TelegramServerError,
+            TransportParseException,
+            TimeoutError,
+        ):
             await self.stop(chat_id)
             await message.edit_text(_lang["error_tg_server"])
         except RTMPStreamingUnsupported:
