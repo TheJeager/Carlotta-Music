@@ -124,7 +124,15 @@ async def _controls(_, query: types.CallbackQuery):
 
     if action == "status":
         return await query.answer()
-    await query.answer(query.lang["processing"], show_alert=True)
+
+    try:
+        await query.answer(query.lang["processing"], show_alert=True)
+    except errors.QueryIdInvalid:
+        try:
+            await query.message.delete()
+        except Exception:
+            pass
+        return
 
     if action == "pause":
         if not await db.playing(chat_id):
