@@ -59,7 +59,7 @@ def checkUB(play):
             if (
                 m.from_user.id not in adminlist
                 and not await db.is_auth(chat_id, m.from_user.id)
-                and not m.from_user.id in app.sudoers
+                and m.from_user.id not in app.sudoers
             ):
                 return await m.reply_text(m.lang["play_admin"])
 
@@ -84,16 +84,9 @@ def checkUB(play):
                         )
             except errors.ChatAdminRequired:
                 return await m.reply_text(m.lang["admin_required"])
-            except (
-                errors.UserNotParticipant,
-                errors.exceptions.bad_request_400.UserNotParticipant,
-            ):
+            except errors.UserNotParticipant:
                 if m.chat.username:
                     invite_link = m.chat.username
-                    try:
-                        await client.resolve_peer(invite_link)
-                    except Exception:
-                        pass
                 else:
                     try:
                         invite_link = voice_optimizer.get_cached_invite(chat_id)
@@ -130,7 +123,6 @@ def checkUB(play):
                     )
 
                 await umm.delete()
-                await client.resolve_peer(chat_id)
 
         if await db.get_cmd_delete(chat_id):
             try:
