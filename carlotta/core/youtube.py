@@ -429,6 +429,7 @@ class YouTube:
             "skip_download": True,
             "noplaylist": not extract_flat,
             "extract_flat": extract_flat,
+            "remote_components": ["ejs:github"],
         }
         if cookie := self.get_cookies():
             opts["cookiefile"] = cookie
