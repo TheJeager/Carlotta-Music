@@ -190,7 +190,7 @@ async def _resolve_track(message: types.Message):
         return _current(message.chat.id)
     query = " ".join(message.command[1:]).strip()
     status = await message.reply_text(
-        message.lang["playlist_add_searching"], quote=True
+        message.lang["playlist_add_searching"]
     )
     mode = await db.get_stream_mode(message.chat.id)
     try:
@@ -229,7 +229,7 @@ async def _render(target, user, lang_dict, index=0, code=None):
             text = "❌ Invalid or unavailable playlist code."
             if isinstance(target, types.CallbackQuery):
                 return await target.answer(text, show_alert=True)
-            return await target.reply_text(text, quote=True)
+            return await target.reply_text(text)
     else:
         code = await _get_or_create_code(user.id)
     items = await db.get_playlist(user.id, "saved")
@@ -242,7 +242,7 @@ async def _render(target, user, lang_dict, index=0, code=None):
             else:
                 await target.edit_message_text(text, reply_markup=markup)
         else:
-            await target.reply_text(text, reply_markup=markup, quote=True)
+            await target.reply_text(text, reply_markup=markup)
         return
     index %= len(items)
     item = items[index]
@@ -269,10 +269,10 @@ async def _render(target, user, lang_dict, index=0, code=None):
     else:
         if thumb:
             await target.reply_photo(
-                thumb, caption=text, reply_markup=markup, quote=True
+                thumb, caption=text, reply_markup=markup
             )
         else:
-            await target.reply_text(text, reply_markup=markup, quote=True)
+            await target.reply_text(text, reply_markup=markup)
 
 
 async def _play_item(query, item):
@@ -301,8 +301,9 @@ async def _play_item(query, item):
     await db.add_playlist_history(query.from_user.id, track)
     position = queue.add(chat_id, track)
     if position != 0 or await db.get_call(chat_id):
-        await query.message.reply_text(
-            query.lang["play_queued"].format(
+        await app.send_message(
+            chat_id=chat_id,
+            text=query.lang["play_queued"].format(
                 position,
                 track.url,
                 track.title,
@@ -310,15 +311,14 @@ async def _play_item(query, item):
                 query.from_user.mention,
             ),
             reply_markup=buttons.play_queued(chat_id, track.id, query.lang["play_now"]),
-            quote=False,
             disable_web_page_preview=True,
         )
         return query.lang["playlist_play_queued"]
-    status = await query.message.reply_text(
-        query.lang["play_downloading"]
+    status = await app.send_message(
+        chat_id=chat_id,
+        text=query.lang["play_downloading"]
         if not track.file_path
         else query.lang["play_next"],
-        quote=False,
     )
     if not track.file_path:
         track.file_path = await yt.download(
@@ -379,7 +379,7 @@ async def _play_all(query, user_id: int, code: str):
     if not current or not current.file_path:
         queue.remove_current(chat_id)
         return await query.answer("Unable to load the first track.", show_alert=True)
-    msg = await query.message.reply_text(query.lang["play_next"], quote=False)
+    msg = await app.send_message(chat_id=query.message.chat.id, text=query.lang["play_next"])
     current.message_id = msg.id
     await anon.play_media(chat_id, msg, current)
     await query.answer(f"Started playlist • {len(selected)} tracks")
@@ -399,7 +399,7 @@ async def add_playlist_cmd(_, m: types.Message):
     if track is False:
         return
     if not track:
-        return await m.reply_text(m.lang["playlist_add_usage"], quote=True)
+        return await m.reply_text(m.lang["playlist_add_usage"])
     _, text, code = await _save(m.from_user.id, track, m.lang)
     await m.reply_text(
         f"{text}\n\n<b>Playlist Code:</b> <code>{code}</code>\nUse <code>/playlist {code}</code> to open it.",
@@ -412,7 +412,7 @@ async def add_playlist_cmd(_, m: types.Message):
 async def del_playlist_cmd(_, m: types.Message):
     item = _current(m.chat.id)
     if not item:
-        return await m.reply_text(m.lang["playlist_no_active"], quote=True)
+        return await m.reply_text(m.lang["playlist_no_active"])
     removed = await db.del_playlist_item(m.from_user.id, item.id)
     await m.reply_text(
         m.lang["playlist_removed"].format(item.title)
