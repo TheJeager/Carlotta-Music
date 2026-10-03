@@ -1,6 +1,9 @@
 name: Daily Repository Maintenance
 
 on:
+  push:
+    branches:
+      - dev
   schedule:
     - cron: "17 2 * * *"
   workflow_dispatch:
