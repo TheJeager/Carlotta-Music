@@ -98,7 +98,7 @@ async def advanced_song_private(_, m: types.Message):
         return
 
     stream_mode = await db.get_stream_mode(m.chat.id)
-    sent = await m.reply_text(m.lang["play_searching"], quote=True)
+    sent = await m.reply_text(m.lang["play_searching"])
     tracks = await yt.advanced_search(
         query=query,
         limit=5,
