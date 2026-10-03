@@ -67,8 +67,9 @@ async def _ensure_callback_play_ready(
             except Exception as ex:
                 return query.lang["play_invite_error"].format(type(ex).__name__)
 
-        status = await query.message.reply_text(
-            query.lang["play_invite"].format(app.name), quote=False
+        status = await app.send_message(
+            chat_id=query.message.chat.id,
+            text=query.lang["play_invite"].format(app.name),
         )
         try:
             await client.join_chat(invite_link)
@@ -201,7 +202,7 @@ async def _controls(_, query: types.CallbackQuery):
 
     try:
         if action in ["skip", "replay", "stop"]:
-            await query.message.reply_text(reply, quote=False)
+            await app.send_message(chat_id=query.message.chat.id, text=reply)
             await query.message.delete()
         else:
             mtext = re.sub(
