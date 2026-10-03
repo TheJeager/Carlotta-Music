@@ -189,9 +189,7 @@ async def _resolve_track(message: types.Message):
     if len(message.command) < 2:
         return _current(message.chat.id)
     query = " ".join(message.command[1:]).strip()
-    status = await message.reply_text(
-        message.lang["playlist_add_searching"]
-    )
+    status = await message.reply_text(message.lang["playlist_add_searching"])
     mode = await db.get_stream_mode(message.chat.id)
     try:
         if yt.is_music_url(query):
@@ -268,9 +266,7 @@ async def _render(target, user, lang_dict, index=0, code=None):
                 pass
     else:
         if thumb:
-            await target.reply_photo(
-                thumb, caption=text, reply_markup=markup
-            )
+            await target.reply_photo(thumb, caption=text, reply_markup=markup)
         else:
             await target.reply_text(text, reply_markup=markup)
 
@@ -379,7 +375,9 @@ async def _play_all(query, user_id: int, code: str):
     if not current or not current.file_path:
         queue.remove_current(chat_id)
         return await query.answer("Unable to load the first track.", show_alert=True)
-    msg = await app.send_message(chat_id=query.message.chat.id, text=query.lang["play_next"])
+    msg = await app.send_message(
+        chat_id=query.message.chat.id, text=query.lang["play_next"]
+    )
     current.message_id = msg.id
     await anon.play_media(chat_id, msg, current)
     await query.answer(f"Started playlist • {len(selected)} tracks")
