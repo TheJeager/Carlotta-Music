@@ -13,6 +13,17 @@ from carlotta import config, logger
 from carlotta.helpers import Track, utils
 
 
+class DummyLogger:
+    def debug(self, msg):
+        pass
+
+    def warning(self, msg):
+        pass
+
+    def error(self, msg):
+        pass
+
+
 class YouTube:
     def __init__(self):
         self.base = "https://www.youtube.com/watch?v="
@@ -908,6 +919,7 @@ class YouTube:
                 "geo_bypass": True,
                 "no_warnings": True,
                 "overwrites": False,
+                "logger": DummyLogger(),
                 "nocheckcertificate": True,
                 "cookiefile": cookie,
                 "socket_timeout": 10,
