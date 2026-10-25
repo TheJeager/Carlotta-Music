@@ -932,21 +932,21 @@ class YouTube:
             network_tuning = {
                 "best": {
                     "http_chunk_size": 10485760,
-                    "concurrent_fragment_downloads": 12,
-                    "retries": 12,
-                    "fragment_retries": 12,
+                    "concurrent_fragment_downloads": 4,
+                    "retries": 6,
+                    "fragment_retries": 6,
                 },
                 "balanced": {
                     "http_chunk_size": 10485760,
-                    "concurrent_fragment_downloads": 20,
-                    "retries": 10,
-                    "fragment_retries": 10,
+                    "concurrent_fragment_downloads": 8,
+                    "retries": 5,
+                    "fragment_retries": 5,
                 },
                 "performance": {
                     "http_chunk_size": 10485760,
-                    "concurrent_fragment_downloads": 32,
-                    "retries": 8,
-                    "fragment_retries": 8,
+                    "concurrent_fragment_downloads": 16,
+                    "retries": 4,
+                    "fragment_retries": 4,
                 },
             }[mode]
             base_opts = {
