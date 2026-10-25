@@ -902,79 +902,79 @@ class YouTube:
             if Path(filename).exists():
                 return filename
 
-                cookie = self.get_cookies()
-                network_tuning = {
-                    "best": {
-                        "http_chunk_size": 10485760,
-                        "concurrent_fragment_downloads": 12,
-                        "retries": 12,
-                        "fragment_retries": 12,
-                    },
-                    "balanced": {
-                        "http_chunk_size": 10485760,
-                        "concurrent_fragment_downloads": 20,
-                        "retries": 10,
-                        "fragment_retries": 10,
-                    },
-                    "performance": {
-                        "http_chunk_size": 10485760,
-                        "concurrent_fragment_downloads": 32,
-                        "retries": 8,
-                        "fragment_retries": 8,
-                    },
-                }[mode]
-                base_opts = {
-                    "outtmpl": f"downloads/%(id)s.{mode}.%(ext)s",
-                    "quiet": True,
-                    "no_progress": True,
-                    "noplaylist": True,
-                    "geo_bypass": True,
-                    "no_warnings": True,
-                    "overwrites": False,
-                    "logger": DummyLogger(),
-                    "nocheckcertificate": True,
-                    "cookiefile": cookie,
-                    "socket_timeout": 10,
-                    **network_tuning,
+            cookie = self.get_cookies()
+            network_tuning = {
+                "best": {
+                    "http_chunk_size": 10485760,
+                    "concurrent_fragment_downloads": 12,
+                    "retries": 12,
+                    "fragment_retries": 12,
+                },
+                "balanced": {
+                    "http_chunk_size": 10485760,
+                    "concurrent_fragment_downloads": 20,
+                    "retries": 10,
+                    "fragment_retries": 10,
+                },
+                "performance": {
+                    "http_chunk_size": 10485760,
+                    "concurrent_fragment_downloads": 32,
+                    "retries": 8,
+                    "fragment_retries": 8,
+                },
+            }[mode]
+            base_opts = {
+                "outtmpl": f"downloads/%(id)s.{mode}.%(ext)s",
+                "quiet": True,
+                "no_progress": True,
+                "noplaylist": True,
+                "geo_bypass": True,
+                "no_warnings": True,
+                "overwrites": False,
+                "logger": DummyLogger(),
+                "nocheckcertificate": True,
+                "cookiefile": cookie,
+                "socket_timeout": 10,
+                **network_tuning,
+            }
+
+            if video:
+                video_formats = {
+                    "best": "(bestvideo[height<=?1080][width<=?1920])+(bestaudio)/best[height<=?1080]",
+                    "balanced": "(bestvideo[height<=?720][width<=?1280][ext=mp4])+(bestaudio)/best[height<=?720]",
+                    "performance": "(bestvideo[height<=?480][width<=?854])+(bestaudio)/best[height<=?480]",
                 }
-    
-                if video:
-                    video_formats = {
-                        "best": "(bestvideo[height<=?1080][width<=?1920])+(bestaudio)/best[height<=?1080]",
-                        "balanced": "(bestvideo[height<=?720][width<=?1280][ext=mp4])+(bestaudio)/best[height<=?720]",
-                        "performance": "(bestvideo[height<=?480][width<=?854])+(bestaudio)/best[height<=?480]",
-                    }
-                    ydl_opts = {
-                        **base_opts,
-                        "format": video_formats[mode],
-                        "merge_output_format": "mp4",
-                    }
-                else:
-                    audio_formats = {
-                        "best": "bestaudio[acodec=opus]/bestaudio",
-                        "balanced": "bestaudio[ext=webm][acodec=opus]/bestaudio",
-                        "performance": "worstaudio[acodec=opus]/worstaudio/bestaudio",
-                    }
-                    ydl_opts = {
-                        **base_opts,
-                        "format": audio_formats[mode],
-                    }
-    
-                def _download():
-                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                        try:
-                            info = ydl.extract_info(url, download=True)
-                        except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError):
-                            return None
-                        except Exception as ex:
-                            logger.warning("Download failed: %s", ex)
-                            return None
-                    requested = filename if Path(filename).exists() else None
-                    if not requested:
-                        for item in Path("downloads").glob(f"{resolved_id}.{mode}.*"):
-                            if item.is_file():
-                                requested = str(item)
-                                break
-                    return requested or ydl.prepare_filename(info)
-    
-                return await asyncio.to_thread(_download)
+                ydl_opts = {
+                    **base_opts,
+                    "format": video_formats[mode],
+                    "merge_output_format": "mp4",
+                }
+            else:
+                audio_formats = {
+                    "best": "bestaudio[acodec=opus]/bestaudio",
+                    "balanced": "bestaudio[ext=webm][acodec=opus]/bestaudio",
+                    "performance": "worstaudio[acodec=opus]/worstaudio/bestaudio",
+                }
+                ydl_opts = {
+                    **base_opts,
+                    "format": audio_formats[mode],
+                }
+
+            def _download():
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    try:
+                        info = ydl.extract_info(url, download=True)
+                    except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError):
+                        return None
+                    except Exception as ex:
+                        logger.warning("Download failed: %s", ex)
+                        return None
+                requested = filename if Path(filename).exists() else None
+                if not requested:
+                    for item in Path("downloads").glob(f"{resolved_id}.{mode}.*"):
+                        if item.is_file():
+                            requested = str(item)
+                            break
+                return requested or ydl.prepare_filename(info)
+
+            return await asyncio.to_thread(_download)
