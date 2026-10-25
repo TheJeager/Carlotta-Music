@@ -6,11 +6,11 @@
 
 ### Elegant Telegram Voice Chat Music Bot
 
-A feature-rich Telegram music bot for voice chats, built with **Python**, **Pyrogram**, **PyTgCalls**, and **MongoDB**.
+A feature-rich Telegram music bot for voice chats, built with **Python**, **Kurigram**, **PyTgCalls**, and **MongoDB**.
 
 <p>
   <img alt="Python" src="https://img.shields.io/badge/Python-3.13%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" />
-  <img alt="Pyrogram" src="https://img.shields.io/badge/Pyrogram-2.x-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" />
+  <img alt="Kurigram" src="https://img.shields.io/badge/Kurigram-2.2.26-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" />
   <img alt="PyTgCalls" src="https://img.shields.io/badge/PyTgCalls-Streaming-26A5E4?style=for-the-badge" />
   <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-Database-47A248?style=for-the-badge&logo=mongodb&logoColor=white" />
   <img alt="Docker" src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
@@ -143,7 +143,7 @@ pip install -r requirements.txt
 
 ```bash
 git clone https://github.com/TheJeager/Carlotta-Music
-cd Carlotta
+cd Carlotta-Music
 ```
 
 ### 2) Install FFmpeg (Ubuntu/Debian)
@@ -249,7 +249,7 @@ docker build -t Carlotta-Music .
 docker run --rm --env-file .env Carlotta-Music 
 ```
 
-Container includes dependencies and runs with `bash start`.
+The image installs FFmpeg, Deno, and the pinned Python dependencies, then starts the bot with `python -m carlotta`.
 
 ---
 
@@ -340,10 +340,11 @@ At startup, database connectivity is verified before full bot service is enabled
 
 ## 🔒 Security Checklist
 
-- [ ] Keep `.env` out of version control.
+- [ ] Keep `.env`, Telegram session files, and cookie files out of version control.
 - [ ] Rotate leaked tokens immediately.
 - [ ] Restrict owner/sudo access.
-- [ ] Audit eval/broadcast usage.
+- [ ] Keep `/eval` and `/exec` restricted to the configured owner; these commands execute arbitrary Python code.
+- [ ] Restrict broadcast and sudo commands to trusted accounts.
 - [ ] Use managed secrets in production.
 
 ---
