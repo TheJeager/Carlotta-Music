@@ -445,12 +445,6 @@ class MongoDB:
         return len(history)
 
     # INLINE CACHE
-    async def set_inline_cache(self, track_id: str, file_id: str) -> None:
-        await self.inline_cache.update_one(
-            {"_id": track_id},
-            {"$set": {"file_id": file_id}},
-            upsert=True,
-        )
 
     async def migrate_coll(self) -> None:
         logger.info("Migrating users and chats from old collections...")
