@@ -55,9 +55,17 @@ async def play_hndlr(
 
     if media:
         setattr(sent, "lang", m.lang)
-        file = await tg.download(m.reply_to_message, sent)
+        try:
+            file = await tg.download(m.reply_to_message, sent)
+        except asyncio.CancelledError:
+            raise
+        except Exception as ex:
+            utils.logger.warning("Telegram media download failed: %s", ex)
+            file = None
         if not file:
-            return
+            return await sent.edit_text(
+                m.lang["play_not_found"].format(config.SUPPORT_CHAT)
+            )
         file.stream_mode = stream_mode
 
     elif m3u8:
