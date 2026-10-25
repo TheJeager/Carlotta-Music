@@ -1,6 +1,6 @@
 FROM python:3.13-slim-bookworm
 
-ARG DENO_VERSION=2.5.6
+ARG DENO_VERSION=2.9.8
 
 WORKDIR /app
 
