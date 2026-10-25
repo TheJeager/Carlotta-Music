@@ -110,6 +110,7 @@ class YouTube:
         return None
 
     def get_cookies(self):
+        Path(self.cookie_dir).mkdir(parents=True, exist_ok=True)
         if not self.checked:
             for file in os.listdir(self.cookie_dir):
                 if file.endswith(".txt"):
@@ -124,15 +125,27 @@ class YouTube:
 
     async def save_cookies(self, urls: list[str]) -> None:
         logger.info("Saving cookies from urls...")
-        async with aiohttp.ClientSession() as session:
+        Path(self.cookie_dir).mkdir(parents=True, exist_ok=True)
+        timeout = aiohttp.ClientTimeout(total=15)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             for url in urls:
-                name = url.split("/")[-1]
-                link = "https://batbin.me/raw/" + name
-                async with session.get(link) as resp:
-                    resp.raise_for_status()
-                    with open(f"{self.cookie_dir}/{name}.txt", "wb") as fw:
-                        fw.write(await resp.read())
-        logger.info(f"Cookies saved in {self.cookie_dir}.")
+                parsed = urlparse(url)
+                name = parsed.path.strip("/").split("/")[-1]
+                if parsed.hostname != "batbin.me" or not re.fullmatch(r"[A-Za-z0-9_-]+", name):
+                    logger.warning("Skipping invalid cookie URL.")
+                    continue
+                link = f"https://batbin.me/raw/{name}"
+                try:
+                    async with session.get(link) as resp:
+                        resp.raise_for_status()
+                        content = await resp.read()
+                    if b"# Netscape HTTP Cookie File" not in content[:512] and b"# HTTP Cookie File" not in content[:512]:
+                        logger.warning("Skipping invalid cookie file from %s.", url)
+                        continue
+                    Path(self.cookie_dir, f"{name}.txt").write_bytes(content)
+                except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as ex:
+                    logger.warning("Failed to fetch cookie file from %s: %s", url, ex)
+        logger.info("Cookie import completed.")
 
     def valid(self, url: str) -> bool:
         return bool(re.match(self.regex, url))
@@ -885,86 +898,83 @@ class YouTube:
             return filename
 
         lock = self._download_locks.setdefault(lock_key, asyncio.Lock())
-        try:
-            async with lock:
-                if Path(filename).exists():
-                    return filename
+        async with lock:
+            if Path(filename).exists():
+                return filename
 
-            cookie = self.get_cookies()
-            network_tuning = {
-                "best": {
-                    "http_chunk_size": 10485760,
-                    "concurrent_fragment_downloads": 12,
-                    "retries": 12,
-                    "fragment_retries": 12,
-                },
-                "balanced": {
-                    "http_chunk_size": 10485760,
-                    "concurrent_fragment_downloads": 20,
-                    "retries": 10,
-                    "fragment_retries": 10,
-                },
-                "performance": {
-                    "http_chunk_size": 10485760,
-                    "concurrent_fragment_downloads": 32,
-                    "retries": 8,
-                    "fragment_retries": 8,
-                },
-            }[mode]
-            base_opts = {
-                "outtmpl": f"downloads/%(id)s.{mode}.%(ext)s",
-                "quiet": True,
-                "no_progress": True,
-                "noplaylist": True,
-                "geo_bypass": True,
-                "no_warnings": True,
-                "overwrites": False,
-                "logger": DummyLogger(),
-                "nocheckcertificate": True,
-                "cookiefile": cookie,
-                "socket_timeout": 10,
-                **network_tuning,
-            }
-
-            if video:
-                video_formats = {
-                    "best": "(bestvideo[height<=?1080][width<=?1920])+(bestaudio)/best[height<=?1080]",
-                    "balanced": "(bestvideo[height<=?720][width<=?1280][ext=mp4])+(bestaudio)/best[height<=?720]",
-                    "performance": "(bestvideo[height<=?480][width<=?854])+(bestaudio)/best[height<=?480]",
+                cookie = self.get_cookies()
+                network_tuning = {
+                    "best": {
+                        "http_chunk_size": 10485760,
+                        "concurrent_fragment_downloads": 12,
+                        "retries": 12,
+                        "fragment_retries": 12,
+                    },
+                    "balanced": {
+                        "http_chunk_size": 10485760,
+                        "concurrent_fragment_downloads": 20,
+                        "retries": 10,
+                        "fragment_retries": 10,
+                    },
+                    "performance": {
+                        "http_chunk_size": 10485760,
+                        "concurrent_fragment_downloads": 32,
+                        "retries": 8,
+                        "fragment_retries": 8,
+                    },
+                }[mode]
+                base_opts = {
+                    "outtmpl": f"downloads/%(id)s.{mode}.%(ext)s",
+                    "quiet": True,
+                    "no_progress": True,
+                    "noplaylist": True,
+                    "geo_bypass": True,
+                    "no_warnings": True,
+                    "overwrites": False,
+                    "logger": DummyLogger(),
+                    "nocheckcertificate": True,
+                    "cookiefile": cookie,
+                    "socket_timeout": 10,
+                    **network_tuning,
                 }
-                ydl_opts = {
-                    **base_opts,
-                    "format": video_formats[mode],
-                    "merge_output_format": "mp4",
-                }
-            else:
-                audio_formats = {
-                    "best": "bestaudio[acodec=opus]/bestaudio",
-                    "balanced": "bestaudio[ext=webm][acodec=opus]/bestaudio",
-                    "performance": "worstaudio[acodec=opus]/worstaudio/bestaudio",
-                }
-                ydl_opts = {
-                    **base_opts,
-                    "format": audio_formats[mode],
-                }
-
-            def _download():
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    try:
-                        info = ydl.extract_info(url, download=True)
-                    except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError):
-                        return None
-                    except Exception as ex:
-                        logger.warning("Download failed: %s", ex)
-                        return None
-                requested = filename if Path(filename).exists() else None
-                if not requested:
-                    for item in Path("downloads").glob(f"{resolved_id}.{mode}.*"):
-                        if item.is_file():
-                            requested = str(item)
-                            break
-                return requested or ydl.prepare_filename(info)
-
-            return await asyncio.to_thread(_download)
-        finally:
-            self._download_locks.pop(lock_key, None)
+    
+                if video:
+                    video_formats = {
+                        "best": "(bestvideo[height<=?1080][width<=?1920])+(bestaudio)/best[height<=?1080]",
+                        "balanced": "(bestvideo[height<=?720][width<=?1280][ext=mp4])+(bestaudio)/best[height<=?720]",
+                        "performance": "(bestvideo[height<=?480][width<=?854])+(bestaudio)/best[height<=?480]",
+                    }
+                    ydl_opts = {
+                        **base_opts,
+                        "format": video_formats[mode],
+                        "merge_output_format": "mp4",
+                    }
+                else:
+                    audio_formats = {
+                        "best": "bestaudio[acodec=opus]/bestaudio",
+                        "balanced": "bestaudio[ext=webm][acodec=opus]/bestaudio",
+                        "performance": "worstaudio[acodec=opus]/worstaudio/bestaudio",
+                    }
+                    ydl_opts = {
+                        **base_opts,
+                        "format": audio_formats[mode],
+                    }
+    
+                def _download():
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        try:
+                            info = ydl.extract_info(url, download=True)
+                        except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError):
+                            return None
+                        except Exception as ex:
+                            logger.warning("Download failed: %s", ex)
+                            return None
+                    requested = filename if Path(filename).exists() else None
+                    if not requested:
+                        for item in Path("downloads").glob(f"{resolved_id}.{mode}.*"):
+                            if item.is_file():
+                                requested = str(item)
+                                break
+                    return requested or ydl.prepare_filename(info)
+    
+                return await asyncio.to_thread(_download)
