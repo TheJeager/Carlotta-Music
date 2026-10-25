@@ -50,7 +50,7 @@ A feature-rich Telegram music bot for voice chats, built with **Python**, **Kuri
 ### Welcome Experience
 
 - Branded startup image and clean command responses.
-- Fast feedback for play/search/ping actions.
+- Fast feedback for playback and ping actions.
 - Structured controls for playback, queue, and quality tuning.
 
 ### What You Can Expect
