@@ -203,11 +203,18 @@ class TgCall(PyTgCalls):
         _lang = await lang.get_lang(chat_id)
         _thumb = thumb_path
         if not _thumb and config.THUMB_GEN:
-            _thumb = (
-                await thumb.generate(media)
-                if isinstance(media, Track)
-                else config.DEFAULT_THUMB
-            )
+            try:
+                _thumb = (
+                    await thumb.generate(media)
+                    if isinstance(media, Track)
+                    else config.DEFAULT_THUMB
+                )
+            except asyncio.CancelledError:
+                raise
+            except Exception as ex:
+                logger.warning(
+                    "Thumbnail generation failed in chat %s: %s", chat_id, ex
+                )
         if _thumb:
             clean.register_thumb(chat_id, _thumb)
 
