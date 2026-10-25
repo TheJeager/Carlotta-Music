@@ -937,7 +937,6 @@ class YouTube:
                 "no_warnings": True,
                 "overwrites": False,
                 "logger": DummyLogger(),
-                "nocheckcertificate": True,
                 "cookiefile": cookie,
                 "socket_timeout": 10,
                 **network_tuning,
