@@ -13,9 +13,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY requirements.txt .
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg curl ca-certificates procps && \
+    apt-get install -y --no-install-recommends ffmpeg curl ca-certificates procps unzip && \
     curl -fsSL https://deno.land/install.sh -o /tmp/deno-install.sh && \
-    DENO_VERSION=${DENO_VERSION} sh /tmp/deno-install.sh && \
+    sh /tmp/deno-install.sh v${DENO_VERSION} && \
     rm -f /tmp/deno-install.sh && \
     pip install --no-cache-dir pip==25.3 setuptools==80.9.0 wheel==0.45.1 && \
     pip install --no-cache-dir -r requirements.txt && \
