@@ -44,7 +44,9 @@ async def play_hndlr(
 ) -> None:
     sent = await m.reply_text(m.lang["play_searching"])
     file = None
-    mention = m.from_user.mention
+    sender = m.from_user
+    mention = sender.mention if sender else "Anonymous Admin"
+    sender_id = sender.id if sender else None
     media = tg.get_media(m.reply_to_message) if m.reply_to_message else None
     stream_mode = await db.get_stream_mode(m.chat.id)
     tracks = []
@@ -52,10 +54,14 @@ async def play_hndlr(
     if media:
         setattr(sent, "lang", m.lang)
         file = await tg.download(m.reply_to_message, sent)
+        if not file:
+            return
         file.stream_mode = stream_mode
 
     elif m3u8:
         file = await tg.process_m3u8(url, sent.id, video)
+        if not file:
+            return await sent.edit_text(m.lang["play_not_found"].format(config.SUPPORT_CHAT))
         file.stream_mode = stream_mode
 
     elif url:
@@ -78,10 +84,6 @@ async def play_hndlr(
             file = await yt.resolve_music_url(
                 url, sent.id, video=video, mode=stream_mode
             )
-        elif m3u8:
-            file = await tg.process_m3u8(url, sent.id, video)
-            file.stream_mode = stream_mode
-
         if not file:
             return await sent.edit_text(
                 m.lang["play_not_found"].format(config.SUPPORT_CHAT)
@@ -99,7 +101,7 @@ async def play_hndlr(
         return await sent.edit_text(
             m.lang["play_usage"],
             reply_markup=buttons.play_usage_markup(
-                m.from_user.id,
+                sender_id or 0,
                 m.lang["playlist_button"],
                 m.lang["close"],
             ),
@@ -114,7 +116,8 @@ async def play_hndlr(
         await utils.play_log(m, sent.link, file.title, file.duration)
 
     file.user = mention
-    await db.add_playlist_history(m.from_user.id, file)
+    if sender_id is not None:
+        await db.add_playlist_history(sender_id, file)
     if force:
         queue.force_add(m.chat.id, file)
     else:
@@ -127,7 +130,7 @@ async def play_hndlr(
                     file.url,
                     file.title,
                     file.duration,
-                    m.from_user.mention,
+                    mention,
                 ),
                 reply_markup=buttons.play_queued(
                     m.chat.id, file.id, m.lang["play_now"]
@@ -163,10 +166,14 @@ async def play_hndlr(
             if config.THUMB_GEN:
                 tasks.append(thumb.generate(file))
 
-            results = await asyncio.gather(*tasks)
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            if isinstance(results[0], BaseException) or not results[0]:
+                return await sent.edit_text(
+                    m.lang["play_not_found"].format(config.SUPPORT_CHAT)
+                )
             file.file_path = results[0]
             if len(results) > 1:
-                _thumb = results[1]
+                _thumb = None if isinstance(results[1], BaseException) else results[1]
     elif config.THUMB_GEN:
         _thumb = await thumb.generate(file)
 
