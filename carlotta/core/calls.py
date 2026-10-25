@@ -82,6 +82,16 @@ class TgCall(PyTgCalls):
                 getattr(media, "id", "unknown"),
             )
             return None
+        except asyncio.CancelledError:
+            raise
+        except Exception as ex:
+            logger.warning(
+                "Download failed in chat %s for media %s: %s",
+                chat_id,
+                getattr(media, "id", "unknown"),
+                ex,
+            )
+            return None
 
     async def _resolve_next_media(
         self,
@@ -115,7 +125,10 @@ class TgCall(PyTgCalls):
         if config.THUMB_GEN:
             tasks.append(thumb.generate(media))
 
-        results = await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        if isinstance(results[0], BaseException):
+            logger.warning("Prefetch failed in chat %s: %s", chat_id, results[0])
+            return
         media.file_path = results[0]
 
     def schedule_prefetch(self, chat_id: int) -> None:
@@ -166,7 +179,8 @@ class TgCall(PyTgCalls):
         queue.clear(chat_id)
         await db.remove_call(chat_id)
         await db.set_loop(chat_id, 0)
-        self.play_next_locks.pop(chat_id, None)
+        # Keep this per-chat lock stable: deleting it while play_next waits
+        # can let two tasks advance the same queue concurrently.
         self.autoplay_history.pop(chat_id, None)
         task = self.prefetch_tasks.pop(chat_id, None)
         if task and not task.done():
