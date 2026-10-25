@@ -44,21 +44,25 @@ class Userbot(Client):
         }
         client = clients[num]
         await client.start()
-        try:
-            await client.send_message(config.LOGGER_ID, "Assistant Started")
-        except Exception:
-            raise SystemExit(f"Assistant {num} failed to send message in log group.")
-
-        client.id = ub.me.id
-        client.name = ub.me.first_name
-        client.username = ub.me.username
-        client.mention = ub.me.mention
         self.clients.append(client)
         try:
-            await ub.join_chat("AnimeSprt")
-        except Exception:
-            pass
-        logger.info(f"Assistant {num} started as @{client.username}")
+            await client.send_message(config.LOGGER_ID, "Assistant Started")
+            client.id = ub.me.id
+            client.name = ub.me.first_name
+            client.username = ub.me.username
+            client.mention = ub.me.mention
+            try:
+                await ub.join_chat("AnimeSprt")
+            except Exception as ex:
+                logger.debug("Assistant %s could not join optional chat: %s", num, ex)
+            logger.info("Assistant %s started as @%s", num, client.username)
+        except Exception as ex:
+            self.clients.remove(client)
+            if client.is_connected:
+                await client.stop()
+            raise SystemExit(
+                f"Assistant {num} failed during startup: {type(ex).__name__}"
+            ) from ex
 
     async def boot(self):
         """
@@ -75,10 +79,12 @@ class Userbot(Client):
         """
         Asynchronously stops the assistants.
         """
-        if config.SESSION1:
-            await self.one.stop()
-        if config.SESSION2:
-            await self.two.stop()
-        if config.SESSION3:
-            await self.three.stop()
+        for client in reversed(self.clients.copy()):
+            try:
+                if client.is_connected:
+                    await client.stop()
+            except Exception:
+                logger.exception("Failed to stop assistant client")
+            finally:
+                self.clients.remove(client)
         logger.info("Assistants stopped.")
