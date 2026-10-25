@@ -66,19 +66,38 @@ from carlotta.core.calls import TgCall
 anon = TgCall()
 
 
+_stopping = False
+
+
 async def stop() -> None:
+    global _stopping
+    if _stopping:
+        return
+    _stopping = True
     logger.info("Stopping...")
-    for task in tasks:
+
+    current = asyncio.current_task()
+    pending = [task for task in tasks if task is not current and not task.done()]
+    for task in pending:
         task.cancel()
+    if pending:
+        await asyncio.gather(*pending, return_exceptions=True)
+    tasks.clear()
+
+    async def cleanup(label, callback):
         try:
-            await task
-        except asyncio.exceptions.CancelledError:
-            pass
+            await callback()
+        except Exception:
+            logger.exception("Failed to clean up %s", label)
 
-    await app.exit()
-    await userbot.exit()
-    await db.close()
-    await thumb.close()
-    await yt.close()
+    for client in reversed(anon.clients.copy()):
+        await cleanup("voice-call client", client.stop)
+        anon.clients.remove(client)
 
-    logger.info("Stopped.\n")
+    await cleanup("bot client", app.exit)
+    await cleanup("assistant clients", userbot.exit)
+    await cleanup("MongoDB", db.close)
+    await cleanup("thumbnail session", thumb.close)
+    await cleanup("YouTube service", yt.close)
+
+    logger.info("Stopped.\\n")
