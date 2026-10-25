@@ -58,8 +58,11 @@ class Userbot(Client):
             logger.info("Assistant %s started as @%s", num, client.username)
         except Exception as ex:
             self.clients.remove(client)
-            if client.is_connected:
-                await client.stop()
+            try:
+                if client.is_connected:
+                    await client.stop()
+            except Exception:
+                logger.exception("Failed to stop assistant %s after startup error", num)
             raise SystemExit(
                 f"Assistant {num} failed during startup: {type(ex).__name__}"
             ) from ex
