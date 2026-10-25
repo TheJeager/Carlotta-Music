@@ -393,6 +393,10 @@ class TgCall(PyTgCalls):
                             )
                         if media.file_path:
                             break
+                        # Keep every failed autoplay candidate out of the next
+                        # related-track selection, not just the first failure.
+                        if getattr(media, "id", None):
+                            self.autoplay_history[chat_id].append(media.id)
                     else:
                         await self.stop(chat_id)
                         return
