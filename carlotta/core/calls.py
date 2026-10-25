@@ -377,6 +377,9 @@ class TgCall(PyTgCalls):
                     await msg.edit_text(
                         _lang["error_no_file"].format(config.SUPPORT_CHAT)
                     )
+                    # Avoid selecting the same failed autoplay track repeatedly.
+                    if getattr(media, "id", None):
+                        self.autoplay_history[chat_id].append(media.id)
                     for _ in range(5):
                         media = await self._resolve_next_media(
                             chat_id, current, allow_autoplay=allow_autoplay
