@@ -181,6 +181,7 @@ async def play_hndlr(
 
             results = await asyncio.gather(*tasks, return_exceptions=True)
             if isinstance(results[0], BaseException) or not results[0]:
+                queue.remove_current(m.chat.id)
                 return await sent.edit_text(
                     m.lang["play_not_found"].format(config.SUPPORT_CHAT)
                 )
