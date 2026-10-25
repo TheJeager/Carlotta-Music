@@ -38,14 +38,20 @@ class Bot(pyrogram.Client):
             if member.status != pyrogram.enums.ChatMemberStatus.ADMINISTRATOR:
                 raise SystemExit("Please promote the bot as an admin in logger group.")
         except Exception as ex:
-            if self.is_connected:
-                await self.stop()
+            try:
+                if self.is_connected:
+                    await self.stop()
+            except Exception:
+                logger.exception("Failed to stop bot after startup error")
             raise SystemExit(
                 f"Bot has failed during startup: {type(ex).__name__}"
             ) from ex
         except BaseException:
-            if self.is_connected:
-                await self.stop()
+            try:
+                if self.is_connected:
+                    await self.stop()
+            except Exception:
+                logger.exception("Failed to stop bot after startup interruption")
             raise
         logger.info("Bot started as @%s", self.username)
 
