@@ -25,9 +25,7 @@ class Config:
         self.OWNER_ID = self._to_int(getenv("OWNER_ID"), default=None)
 
         # Duration limits are stored in seconds; commands display minutes.
-        self.DURATION_LIMIT = self._to_int(
-            getenv("DURATION_LIMIT"), default=60000
-        )
+        self.DURATION_LIMIT = self._to_int(getenv("DURATION_LIMIT"), default=60000)
         self.QUEUE_LIMIT = self._to_int(getenv("QUEUE_LIMIT"), default=20)
         self.PLAYLIST_LIMIT = self._to_int(getenv("PLAYLIST_LIMIT"), default=20)
 

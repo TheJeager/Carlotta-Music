@@ -41,9 +41,9 @@ async def _seek(_, m: types.Message):
     try:
         await anon.play_media(m.chat.id, sent, media, start_from)
     except Exception:
-        return await sent.edit_text(m.lang["play_not_found"].format(config.SUPPORT_CHAT))
+        return await sent.edit_text(
+            m.lang["play_not_found"].format(config.SUPPORT_CHAT)
+        )
     media.time = start_from
     user = m.from_user.mention if m.from_user else "Anonymous Admin"
-    await sent.edit_text(
-        m.lang["play_seeked"].format(stype, start_from, user)
-    )
+    await sent.edit_text(m.lang["play_seeked"].format(stype, start_from, user))

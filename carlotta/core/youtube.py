@@ -131,7 +131,9 @@ class YouTube:
             for url in urls:
                 parsed = urlparse(url)
                 name = parsed.path.strip("/").split("/")[-1]
-                if parsed.hostname != "batbin.me" or not re.fullmatch(r"[A-Za-z0-9_-]+", name):
+                if parsed.hostname != "batbin.me" or not re.fullmatch(
+                    r"[A-Za-z0-9_-]+", name
+                ):
                     logger.warning("Skipping invalid cookie URL.")
                     continue
                 link = f"https://batbin.me/raw/{name}"
@@ -139,7 +141,10 @@ class YouTube:
                     async with session.get(link) as resp:
                         resp.raise_for_status()
                         content = await resp.read()
-                    if b"# Netscape HTTP Cookie File" not in content[:512] and b"# HTTP Cookie File" not in content[:512]:
+                    if (
+                        b"# Netscape HTTP Cookie File" not in content[:512]
+                        and b"# HTTP Cookie File" not in content[:512]
+                    ):
                         logger.warning("Skipping invalid cookie file from %s.", url)
                         continue
                     Path(self.cookie_dir, f"{name}.txt").write_bytes(content)

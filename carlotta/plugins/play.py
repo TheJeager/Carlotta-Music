@@ -63,7 +63,9 @@ async def play_hndlr(
     elif m3u8:
         file = await tg.process_m3u8(url, sent.id, video)
         if not file:
-            return await sent.edit_text(m.lang["play_not_found"].format(config.SUPPORT_CHAT))
+            return await sent.edit_text(
+                m.lang["play_not_found"].format(config.SUPPORT_CHAT)
+            )
         file.stream_mode = stream_mode
 
     elif url:
