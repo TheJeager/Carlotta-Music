@@ -360,43 +360,6 @@ async def clean_toggle_cb(_, query: types.CallbackQuery):
     )
 
 
-@app.on_callback_query(filters.regex("^search\\s") & ~app.bl_users)
-@lang.language()
-async def search_callback(_, query: types.CallbackQuery):
-    args = query.data.split()
-    user_id = int(args[1])
-    action = args[2]
-
-    if query.from_user.id != user_id:
-        return await query.answer(query.lang["playlist_owner_only"], show_alert=True)
-
-    if action == "close":
-        await query.message.delete()
-        return
-
-    video_id = args[3]
-    chat_id = query.message.chat.id
-    _lang = query.lang
-
-    res = await _ensure_callback_play_ready(query, chat_id)
-    if res:
-        return await query.answer(res, show_alert=True)
-
-    await query.answer(query.lang["processing"], show_alert=True)
-    await query.message.delete()
-
-    from carlotta.plugins.play import play_hndlr
-
-    # Simulate a message for play_hndlr
-    # We need a proper message object for checkUB and play_hndlr
-    m = query.message
-    m.from_user = query.from_user
-    m.command = ["play", video_id]
-    m.lang = _lang
-
-    await play_hndlr(_, m, url=f"https://www.youtube.com/watch?v={video_id}")
-
-
 @app.on_callback_query(filters.regex("^inline_dl\\s") & ~app.bl_users)
 @lang.language()
 async def inline_dl_cb(_, query: types.CallbackQuery):
