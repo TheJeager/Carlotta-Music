@@ -1,6 +1,6 @@
 from pyrogram import filters, types
 
-from carlotta import anon, app, db, lang, queue
+from carlotta import anon, app, config, db, lang, queue
 from carlotta.helpers import can_manage_vc
 
 
@@ -41,7 +41,7 @@ async def _seek(_, m: types.Message):
     try:
         await anon.play_media(m.chat.id, sent, media, start_from)
     except Exception:
-        return await sent.edit_text(m.lang["play_not_found"].format(""))
+        return await sent.edit_text(m.lang["play_not_found"].format(config.SUPPORT_CHAT))
     media.time = start_from
     user = m.from_user.mention if m.from_user else "Anonymous Admin"
     await sent.edit_text(
