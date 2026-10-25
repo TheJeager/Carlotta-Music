@@ -28,18 +28,18 @@ class VoiceOptimizer:
     async def fast_join(self, client, chat_id: int, invite_link: str) -> None:
         lock = self._locks[chat_id]
         async with lock:
-            delays = (0.0, 0.4, 0.8)
-            last_error = None
-            for delay in delays:
+            for attempt, delay in enumerate((0.0, 0.25, 0.6), start=1):
                 if delay:
                     await asyncio.sleep(delay)
                 try:
                     await client.join_chat(invite_link)
                     return
-                except Exception as ex:
-                    last_error = ex
+                except (asyncio.TimeoutError, OSError, ConnectionError) as ex:
+                    if attempt == 3:
+                        raise
                     logger.warning(
-                        "Fast join retry in %s (%s)", chat_id, type(ex).__name__
+                        "Temporary join failure in %s; retry %s/3 (%s)",
+                        chat_id,
+                        attempt + 1,
+                        type(ex).__name__,
                     )
-            if last_error:
-                raise last_error
