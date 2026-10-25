@@ -890,7 +890,7 @@ class YouTube:
         mode: str = "balanced",
     ) -> str | None:
         mode = self.normalize_mode(mode)
-        resolved_id = self.extract_video_id(video_id) or video_id
+        resolved_id = self.extract_video_id(video_id)
         if not resolved_id:
             return None
 
@@ -979,6 +979,6 @@ class YouTube:
                         if item.is_file():
                             requested = str(item)
                             break
-                return requested or ydl.prepare_filename(info)
+                return requested
 
             return await asyncio.to_thread(_download)
