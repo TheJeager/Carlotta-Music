@@ -13,7 +13,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY requirements.txt .
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg curl ca-certificates procps unzip && \
+    apt-get install -y --no-install-recommends ffmpeg curl ca-certificates unzip && \
     curl -fsSL https://deno.land/install.sh -o /tmp/deno-install.sh && \
     sh /tmp/deno-install.sh v${DENO_VERSION} && \
     rm -f /tmp/deno-install.sh && \
@@ -26,8 +26,5 @@ RUN apt-get update && \
 COPY . .
 
 RUN mkdir -p downloads temp logs cache carlotta/cookies
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD pgrep -f "python.*-m carlotta" >/dev/null || exit 1
 
 CMD ["python", "-m", "carlotta"]
