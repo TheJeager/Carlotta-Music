@@ -4,7 +4,7 @@ from html import escape
 
 from pyrogram import filters, types
 
-from carlotta import anon, app, clean, config, db, lang, queue, tg, thumb, yt
+from carlotta import anon, app, clean, config, db, lang, logger, queue, tg, thumb, yt
 from carlotta.helpers import buttons, utils
 from carlotta.helpers._play import checkUB
 
@@ -60,7 +60,7 @@ async def play_hndlr(
         except asyncio.CancelledError:
             raise
         except Exception as ex:
-            utils.logger.warning("Telegram media download failed: %s", ex)
+            logger.warning("Telegram media download failed: %s", ex)
             file = None
         if not file:
             return await sent.edit_text(
