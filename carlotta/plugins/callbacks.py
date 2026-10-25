@@ -414,9 +414,17 @@ async def inline_dl_cb(_, query: types.CallbackQuery):
         await db.get_stream_mode(query.message.chat.id) if query.message else "balanced"
     )
 
-    # Get metadata for better file sending
-    track = await yt.search(video_id, 0, video=is_video, mode=stream_mode)
-    file_path = await yt.download(video_id, video=is_video, mode=stream_mode)
+    # Get metadata and download independently so provider failures become
+    # a visible callback error instead of an unhandled task exception.
+    try:
+        track = await yt.search(video_id, 0, video=is_video, mode=stream_mode)
+        file_path = await yt.download(video_id, video=is_video, mode=stream_mode)
+    except Exception as ex:
+        from carlotta import logger
+
+        logger.warning("Inline download failed for %s: %s", video_id, ex)
+        track = None
+        file_path = None
 
     if not file_path:
         error_text = query.lang["error_no_file"].format(config.SUPPORT_CHAT)
