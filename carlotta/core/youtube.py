@@ -977,8 +977,12 @@ class YouTube:
                         return None
                 requested = filename if Path(filename).exists() else None
                 if not requested:
+                    media_extensions = {
+                        ".aac", ".flac", ".m4a", ".mkv", ".mp3", ".mp4",
+                        ".ogg", ".opus", ".wav", ".webm",
+                    }
                     for item in Path("downloads").glob(f"{resolved_id}.{mode}.*"):
-                        if item.is_file():
+                        if item.is_file() and item.suffix.lower() in media_extensions:
                             requested = str(item)
                             break
                 return requested
