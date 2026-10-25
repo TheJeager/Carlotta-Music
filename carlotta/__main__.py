@@ -18,26 +18,28 @@ async def idle():
 
 
 async def main():
-    await db.connect()
-    await app.boot()
-    await userbot.boot()
-    await anon.boot()
-    await thumb.start()
+    try:
+        await db.connect()
+        await app.boot()
+        await userbot.boot()
+        await anon.boot()
+        await thumb.start()
 
-    for module in all_modules:
-        importlib.import_module(f"carlotta.plugins.{module}")
-    logger.info(f"Loaded {len(all_modules)} modules.")
+        for module in all_modules:
+            importlib.import_module(f"carlotta.plugins.{module}")
+        logger.info(f"Loaded {len(all_modules)} modules.")
 
-    if config.COOKIES_URL:
-        await yt.save_cookies(config.COOKIES_URL)
+        if config.COOKIES_URL:
+            await yt.save_cookies(config.COOKIES_URL)
 
-    sudoers = await db.get_sudoers()
-    app.sudoers.update(sudoers)
-    app.bl_users.update(await db.get_blacklisted())
-    logger.info(f"Loaded {len(app.sudoers)} sudo users.")
+        sudoers = await db.get_sudoers()
+        app.sudoers.update(sudoers)
+        app.bl_users.update(await db.get_blacklisted())
+        logger.info(f"Loaded {len(app.sudoers)} sudo users.")
 
-    await idle()
-    await stop()
+        await idle()
+    finally:
+        await stop()
 
 
 if __name__ == "__main__":
