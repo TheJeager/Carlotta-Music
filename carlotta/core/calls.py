@@ -160,19 +160,6 @@ class TgCall(PyTgCalls):
             await self.stop(chat_id)
             return False
 
-    async def _change_volume(
-        self, client: PyTgCalls, chat_id: int, volume: int
-    ) -> None:
-        change_volume = getattr(client, "change_volume_call", None)
-        if change_volume is None:
-            change_volume = getattr(client, "change_volume")
-        await change_volume(chat_id, volume)
-
-    async def set_volume(self, chat_id: int, volume: int) -> None:
-        client = await db.get_assistant(chat_id)
-        await self._change_volume(client, chat_id, volume)
-        await db.set_volume(chat_id, volume)
-
     async def stop(self, chat_id: int) -> None:
         client = await db.get_assistant(chat_id)
         await clean.cleanup_chat_thumbs(chat_id)
@@ -250,9 +237,6 @@ class TgCall(PyTgCalls):
                 stream=stream,
                 config=types.GroupCallConfig(auto_start=False),
             )
-            volume = await db.get_volume(chat_id)
-            if volume != 100:
-                await self._change_volume(client, chat_id, volume)
 
             if not seek_time:
                 media.time = 1
