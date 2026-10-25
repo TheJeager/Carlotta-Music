@@ -100,4 +100,4 @@ async def stop() -> None:
     await cleanup("thumbnail session", thumb.close)
     await cleanup("YouTube service", yt.close)
 
-    logger.info("Stopped.\\n")
+    logger.info("Stopped.\n")
