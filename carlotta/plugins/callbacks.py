@@ -414,8 +414,6 @@ async def inline_dl_cb(_, query: types.CallbackQuery):
         await db.get_stream_mode(query.message.chat.id) if query.message else "balanced"
     )
 
-    # Get metadata and download independently so provider failures become
-    # a visible callback error instead of an unhandled task exception.
     try:
         track = await yt.search(video_id, 0, video=is_video, mode=stream_mode)
         file_path = await yt.download(video_id, video=is_video, mode=stream_mode)
@@ -433,10 +431,10 @@ async def inline_dl_cb(_, query: types.CallbackQuery):
         return await app.send_message(query.from_user.id, error_text)
 
     _thumb = None
-    if track and config.THUMB_GEN:
-        _thumb = await thumb.generate(track)
-
     try:
+        if track and config.THUMB_GEN:
+            _thumb = await thumb.generate(track)
+
         caption = f"<u><i>Fetched by {app.name}</i></u>"
         reply_markup = buttons.search_again_markup()
 
