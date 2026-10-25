@@ -196,7 +196,22 @@ class YouTube:
 
     def is_stream_url(self, url: str) -> bool:
         path = urlparse(url).path.lower()
-        return path.endswith((".m3u8", ".mpd", ".mp3", ".aac", ".flac", ".wav", ".ogg"))
+        return path.endswith(
+            (
+                ".m3u8",
+                ".mpd",
+                ".mp3",
+                ".m4a",
+                ".aac",
+                ".flac",
+                ".wav",
+                ".ogg",
+                ".opus",
+                ".webm",
+                ".mp4",
+                ".mkv",
+            )
+        )
 
     def _build_track(
         self,
