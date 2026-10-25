@@ -10,6 +10,8 @@ from carlotta.helpers._play import checkUB
 
 
 def playlist_to_queue(chat_id: int, tracks: list) -> str:
+    available = max(config.QUEUE_LIMIT - len(queue.get_queue(chat_id)), 0)
+    tracks[:] = tracks[:available]
     text = "<blockquote expandable>"
     hidden = 0
     for index, track in enumerate(tracks, start=1):
@@ -143,14 +145,15 @@ async def play_hndlr(
 
             if tracks:
                 added = playlist_to_queue(m.chat.id, tracks)
-                msg = await app.send_message(
-                    chat_id=m.chat.id,
-                    text=m.lang["playlist_queued"].format(len(tracks)) + added,
-                )
-                if await db.get_clean(m.chat.id):
-                    clean.create_background_task(
-                        clean.delete_message_after(m.chat.id, msg.id)
+                if tracks:
+                    msg = await app.send_message(
+                        chat_id=m.chat.id,
+                        text=m.lang["playlist_queued"].format(len(tracks)) + added,
                     )
+                    if await db.get_clean(m.chat.id):
+                        clean.create_background_task(
+                            clean.delete_message_after(m.chat.id, msg.id)
+                        )
             return
 
     _thumb = None
@@ -189,7 +192,8 @@ async def play_hndlr(
     if not tracks:
         return
     added = playlist_to_queue(m.chat.id, tracks)
-    await app.send_message(
-        chat_id=m.chat.id,
-        text=m.lang["playlist_queued"].format(len(tracks)) + added,
-    )
+    if tracks:
+        await app.send_message(
+            chat_id=m.chat.id,
+            text=m.lang["playlist_queued"].format(len(tracks)) + added,
+        )
