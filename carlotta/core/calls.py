@@ -382,7 +382,7 @@ class TgCall(PyTgCalls):
                         self.autoplay_history[chat_id].append(media.id)
                     for _ in range(5):
                         media = await self._resolve_next_media(
-                            chat_id, current, allow_autoplay=allow_autoplay
+                            chat_id, media, allow_autoplay=allow_autoplay
                         )
                         if not media:
                             await self.stop(chat_id)
