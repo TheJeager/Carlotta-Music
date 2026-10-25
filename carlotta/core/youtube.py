@@ -835,7 +835,7 @@ class YouTube:
         pass
 
     async def get_audio_stream(self, video_id: str) -> dict | None:
-        resolved_id = self.extract_video_id(video_id) or video_id
+        resolved_id = self.extract_video_id(video_id)
         if not resolved_id:
             return None
 
