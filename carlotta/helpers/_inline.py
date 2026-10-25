@@ -93,6 +93,47 @@ class Inline:
             )
         return self.ikm(keyboard)
 
+    def start_key(
+        self, _lang: dict, private: bool = True
+    ) -> types.InlineKeyboardMarkup:
+        rows = []
+        if private:
+            rows.append(
+                [
+                    self.button(
+                        text=_lang["add_me"],
+                        url=f"https://t.me/{app.username}?startgroup=true",
+                        style="success",
+                    ),
+                    self.button(
+                        text=_lang["help"],
+                        callback_data="help",
+                        style="primary",
+                    ),
+                ]
+            )
+        else:
+            rows.append(
+                [
+                    self.button(
+                        text=_lang["help"],
+                        callback_data="help",
+                        style="primary",
+                    )
+                ]
+            )
+
+        rows.append(
+            [
+                self.button(
+                    text=_lang["support"],
+                    url=config.SUPPORT_CHAT,
+                    style="default",
+                )
+            ]
+        )
+        return self.ikm(rows)
+
     def help_markup(
         self, _lang: dict, back: bool = False
     ) -> types.InlineKeyboardMarkup:
