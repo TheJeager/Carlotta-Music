@@ -168,7 +168,11 @@ async def _controls(_, query: types.CallbackQuery):
         if not media or pos == -1:
             return await query.edit_message_text(query.lang["play_expired"])
 
-        m_id = queue.get_current(chat_id).message_id
+        current = queue.get_current(chat_id)
+        if not current:
+            return await query.edit_message_text(query.lang["play_expired"])
+
+        m_id = current.message_id
         queue.force_add(chat_id, media, remove=pos)
         try:
             await app.delete_messages(
