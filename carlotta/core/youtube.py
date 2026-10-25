@@ -857,14 +857,16 @@ class YouTube:
             if "m3u8" in protocol:
                 continue
 
-            if (
-                not best_audio
-                or (item.get("abr") or 0) > (best_audio.get("abr") or 0)
-                or (item.get("asr") or 0) > (best_audio.get("asr") or 0)
-            ):
+            quality = (item.get("abr") or 0, item.get("asr") or 0)
+            best_quality = (
+                (best_audio.get("abr") or 0, best_audio.get("asr") or 0)
+                if best_audio
+                else None
+            )
+            if best_quality is None or quality > best_quality:
                 best_audio = item
 
-        audio_url = (best_audio or {}).get("url") or info.get("url")
+        audio_url = best_audio.get("url") if best_audio else None
         if not audio_url:
             return None
 
