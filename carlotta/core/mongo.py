@@ -24,7 +24,6 @@ class MongoDB:
         self.loop = {}
         self.notified = []
         self.stream_mode = {}
-        self.volume = {}
         self.cache = self.db.cache
         self.logger = False
 
@@ -42,7 +41,6 @@ class MongoDB:
 
         self.users = []
         self.usersdb = self.db.users
-        self.inline_cache = self.db.inline_cache
         self.playlist_saved_limit = 50
         self.playlist_history_limit = 25
 
@@ -104,20 +102,6 @@ class MongoDB:
         await self.chatsdb.update_one(
             {"_id": chat_id},
             {"$set": {"stream_mode": mode}},
-            upsert=True,
-        )
-
-    async def get_volume(self, chat_id: int) -> int:
-        if chat_id not in self.volume:
-            doc = await self.chatsdb.find_one({"_id": chat_id}) or {}
-            self.volume[chat_id] = doc.get("volume", 100)
-        return self.volume[chat_id]
-
-    async def set_volume(self, chat_id: int, volume: int) -> None:
-        self.volume[chat_id] = volume
-        await self.chatsdb.update_one(
-            {"_id": chat_id},
-            {"$set": {"volume": volume}},
             upsert=True,
         )
 
@@ -461,10 +445,6 @@ class MongoDB:
         return len(history)
 
     # INLINE CACHE
-    async def get_inline_cache(self, track_id: str) -> str | None:
-        doc = await self.inline_cache.find_one({"_id": track_id})
-        return doc.get("file_id") if doc else None
-
     async def set_inline_cache(self, track_id: str, file_id: str) -> None:
         await self.inline_cache.update_one(
             {"_id": track_id},
