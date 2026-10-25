@@ -6,3 +6,24 @@ log.txt
 downloads/
 cache/
 .venv/
+
+# Local environment and credentials
+/.env
+/.env.*
+!/.env.example
+*.session
+*.session-journal
+
+# Runtime output and generated media
+*.log
+errors.txt
+downloads/
+cache/
+temp/
+logs/
+
+# YouTube cookies and partial downloads
+carlotta/cookies/*.txt
+carlotta/cookies/*.cookies
+*.part
+*.ytdl
