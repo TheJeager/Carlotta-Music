@@ -150,6 +150,10 @@ class YouTube:
                     Path(self.cookie_dir, f"{name}.txt").write_bytes(content)
                 except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as ex:
                     logger.warning("Failed to fetch cookie file from %s: %s", url, ex)
+        self.cookies = sorted(
+            str(path) for path in Path(self.cookie_dir).glob("*.txt") if path.is_file()
+        )
+        self.checked = True
         logger.info("Cookie import completed.")
 
     def valid(self, url: str) -> bool:
