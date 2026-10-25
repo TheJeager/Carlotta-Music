@@ -2,20 +2,24 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Security fixes target the current development line. Older versions may not receive updates.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| Version | Supported |
+| --- | --- |
+| `dev` | Yes |
+| `3.0.x` | Best effort |
+| Older versions | No |
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+Please do not report exploitable vulnerabilities in public issues.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Use [GitHub's private vulnerability reporting](https://github.com/TheJeager/Carlotta-Music/security/advisories/new) to share a report with the maintainers. Include the affected commit or version, steps to reproduce, and potential impact. Do not include live bot tokens, Telegram session strings, MongoDB credentials, or cookie contents.
+
+The maintainers should acknowledge a report when they can review it and will coordinate any fix or disclosure through the private report. If private vulnerability reporting is unavailable, contact a repository maintainer privately rather than posting exploit details publicly.
+
+## Security-sensitive features
+
+- `/eval` and `/exec` execute arbitrary Python code and must remain owner-only.
+- Broadcast and sudo commands should be limited to trusted accounts.
+- Keep `.env`, session files, downloaded cookies, and runtime logs out of commits.
