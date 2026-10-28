@@ -20,7 +20,8 @@ def playlist_to_queue(chat_id: int, tracks: list) -> str:
             continue
         pos = queue.add(chat_id, track)
         title = escape(track.title or "Unknown Title")
-        text += f"<b>{pos}.</b> {title}\n"
+        # Queue.add returns a zero-based index; display human-friendly positions.
+        text += f"<b>{pos + 1}.</b> {title}\n"
     if hidden:
         text += f"\n<i>...and {hidden} more track(s).</i>"
     text = text[:1948]
