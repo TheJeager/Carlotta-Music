@@ -471,14 +471,16 @@ class MongoDB:
         async def merge_records(source, target, id_field: str) -> None:
             async for record in source.find():
                 raw_id = record.get("_id")
-                if not isinstance(raw_id, int):
-                    raw_id = record.get(id_field)
                 try:
                     record_id = int(raw_id)
                 except (TypeError, ValueError):
-                    logger.warning("Skipping legacy %s record with invalid ID", id_field)
-                    continue
-
+                    try:
+                        record_id = int(record.get(id_field))
+                    except (TypeError, ValueError):
+                        logger.warning(
+                            "Skipping legacy %s record with invalid ID", id_field
+                        )
+                        continue
                 # Preserve existing fields such as saved playlists and history.
                 fields = {
                     key: value
