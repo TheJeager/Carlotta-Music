@@ -29,15 +29,17 @@ def checkUB(play):
                 ),
             )
 
-        if len(queue.get_queue(chat_id)) >= config.QUEUE_LIMIT:
-            return await m.reply_text(
-                m.lang["play_queue_full"].format(config.QUEUE_LIMIT)
-            )
-
         force = call_kwargs.pop("force", None)
         if force is None:
             force = m.command[0].endswith("force") or (
                 len(m.command) > 1 and "-f" in m.command[1]
+            )
+
+        # Force play replaces the current track, so it must remain available
+        # even when the normal queue has reached its configured limit.
+        if not force and len(queue.get_queue(chat_id)) >= config.QUEUE_LIMIT:
+            return await m.reply_text(
+                m.lang["play_queue_full"].format(config.QUEUE_LIMIT)
             )
 
         video = call_kwargs.pop("video", None)
