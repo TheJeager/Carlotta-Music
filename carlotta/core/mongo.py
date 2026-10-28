@@ -166,11 +166,15 @@ class MongoDB:
         return anon.clients[num - 1]
 
     async def get_client(self, chat_id: int):
+        from carlotta import anon
+
         if chat_id not in self.assistant:
             await self.get_assistant(chat_id)
-        return {1: userbot.one, 2: userbot.two, 3: userbot.three}.get(
-            self.assistant[chat_id]
-        )
+        num = self.assistant.get(chat_id, 0)
+        if not 1 <= num <= len(userbot.clients) or num > len(anon.clients):
+            await self.set_assistant(chat_id)
+            num = self.assistant[chat_id]
+        return userbot.clients[num - 1]
 
     # BLACKLIST METHODS
     async def add_blacklist(self, chat_id: int) -> None:
@@ -483,7 +487,7 @@ class MongoDB:
                 }
                 await target.update_one(
                     {"_id": record_id},
-                    {"$setOnInsert": {"_id": record_id}, "$set": fields},
+                    {"$setOnInsert": {"_id": record_id, **fields}},
                     upsert=True,
                 )
 
