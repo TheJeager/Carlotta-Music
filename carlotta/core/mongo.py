@@ -133,7 +133,11 @@ class MongoDB:
 
     # ASSISTANT METHODS
     async def set_assistant(self, chat_id: int) -> int:
-        num = randint(1, len(userbot.clients))
+        from carlotta import anon
+
+        if not anon.clients:
+            raise RuntimeError("No assistant clients available.")
+        num = randint(1, len(anon.clients))
         await self.assistantdb.update_one(
             {"_id": chat_id},
             {"$set": {"num": num}},
@@ -145,14 +149,21 @@ class MongoDB:
     async def get_assistant(self, chat_id: int):
         from carlotta import anon
 
-        if chat_id not in self.assistant:
-            doc = await self.assistantdb.find_one({"_id": chat_id}) or {}
-            num = doc.get("num") or await self.set_assistant(chat_id)
-            self.assistant[chat_id] = num
-
         if not anon.clients:
             raise RuntimeError("No assistant clients available.")
-        return anon.clients[self.assistant[chat_id] - 1]
+
+        if chat_id not in self.assistant:
+            doc = await self.assistantdb.find_one({"_id": chat_id}) or {}
+            num = doc.get("num")
+            if not isinstance(num, int) or not 1 <= num <= len(anon.clients):
+                num = await self.set_assistant(chat_id)
+            else:
+                self.assistant[chat_id] = num
+
+        num = self.assistant[chat_id]
+        if not 1 <= num <= len(anon.clients):
+            num = await self.set_assistant(chat_id)
+        return anon.clients[num - 1]
 
     async def get_client(self, chat_id: int):
         if chat_id not in self.assistant:
@@ -164,7 +175,8 @@ class MongoDB:
     # BLACKLIST METHODS
     async def add_blacklist(self, chat_id: int) -> None:
         if str(chat_id).startswith("-"):
-            self.blacklisted.append(chat_id)
+            if chat_id not in self.blacklisted:
+                self.blacklisted.append(chat_id)
             return await self.cache.update_one(
                 {"_id": "bl_chats"}, {"$addToSet": {"chat_ids": chat_id}}, upsert=True
             )
@@ -174,7 +186,8 @@ class MongoDB:
 
     async def del_blacklist(self, chat_id: int) -> None:
         if str(chat_id).startswith("-"):
-            self.blacklisted.remove(chat_id)
+            if chat_id in self.blacklisted:
+                self.blacklisted.remove(chat_id)
             return await self.cache.update_one(
                 {"_id": "bl_chats"},
                 {"$pull": {"chat_ids": chat_id}},
@@ -314,9 +327,10 @@ class MongoDB:
         return chat_id in self.admin_play
 
     async def set_play_mode(self, chat_id: int, remove: bool = False) -> None:
-        if remove and chat_id in self.admin_play:
-            self.admin_play.remove(chat_id)
-        else:
+        if remove:
+            if chat_id in self.admin_play:
+                self.admin_play.remove(chat_id)
+        elif chat_id not in self.admin_play:
             self.admin_play.append(chat_id)
         await self.chatsdb.update_one(
             {"_id": chat_id},
@@ -447,47 +461,41 @@ class MongoDB:
     # INLINE CACHE
 
     async def migrate_coll(self) -> None:
+        """Safely merge legacy user/chat records without dropping collections."""
         logger.info("Migrating users and chats from old collections...")
 
-        users, musers, mchats = [], [], []
-        seen_chats, seen_users = set(), set()
-        users.extend([user async for user in self.usersdb.find()])
-        users.extend([user async for user in self.db.tgusersdb.find()])
+        async def merge_records(source, target, id_field: str) -> None:
+            async for record in source.find():
+                raw_id = record.get("_id")
+                if not isinstance(raw_id, int):
+                    raw_id = record.get(id_field)
+                try:
+                    record_id = int(raw_id)
+                except (TypeError, ValueError):
+                    logger.warning("Skipping legacy %s record with invalid ID", id_field)
+                    continue
 
-        for user in users:
-            _id = user.get("_id")
-            if isinstance(_id, int):
-                user_id = _id
-            else:
-                user_id = int(user.get("user_id"))
+                # Preserve existing fields such as saved playlists and history.
+                fields = {
+                    key: value
+                    for key, value in record.items()
+                    if key not in {"_id", id_field}
+                }
+                await target.update_one(
+                    {"_id": record_id},
+                    {"$setOnInsert": {"_id": record_id}, "$set": fields},
+                    upsert=True,
+                )
 
-            if user_id in seen_users:
-                continue
-            seen_users.add(user_id)
-            musers.append({"_id": user_id})
+        await merge_records(self.usersdb, self.usersdb, "user_id")
+        await merge_records(self.db.tgusersdb, self.usersdb, "user_id")
+        await merge_records(self.chatsdb, self.chatsdb, "chat_id")
 
-        await self.usersdb.drop()
-        await self.db.tgusersdb.drop()
-        if musers:
-            await self.usersdb.insert_many(musers)
-
-        async for chat in self.chatsdb.find():
-            _id = chat.get("_id")
-            if isinstance(_id, int):
-                chat_id = _id
-            else:
-                chat_id = int(chat.get("chat_id"))
-
-            if chat_id in seen_chats:
-                continue
-            seen_chats.add(chat_id)
-            mchats.append({"_id": chat_id})
-
-        await self.chatsdb.drop()
-        if mchats:
-            await self.chatsdb.insert_many(mchats)
-
-        await self.cache.insert_one({"_id": "migrated"})
+        await self.cache.update_one(
+            {"_id": "migrated"},
+            {"$set": {"completed": True}},
+            upsert=True,
+        )
         logger.info("Migration completed successfully.")
 
     async def load_cache(self) -> None:
